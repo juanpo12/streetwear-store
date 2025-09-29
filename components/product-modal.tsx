@@ -66,11 +66,11 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl !max-w-4xl sm:max-w-4xl md:max-w-4xl lg:max-w-4xl p-0 gap-0 overflow-hidden">
-        <div className="grid md:grid-cols-[3fr_1fr] gap-0">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-4xl p-0 gap-0 overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] lg:grid-cols-[3fr_1fr] gap-0">
           {/* Product Image */}
-          <div className="relative bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center p-12 md:p-16">
-            <div className="relative w-full h-full min-h-[600px]">
+          <div className="relative bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center p-6 sm:p-8 md:p-12 lg:p-16">
+            <div className="relative w-full h-full min-h-[300px] sm:min-h-[400px] md:min-h-[500px] lg:min-h-[600px]">
               <Image
                 src={colorVariants[selectedColor].image || "/placeholder.svg"}
                 alt={product.name}
@@ -82,7 +82,7 @@ export function ProductModal({ product, open, onOpenChange }: ProductModalProps)
           </div>
 
           {/* Product Details */}
-          <div className="p-8 md:p-10 flex flex-col bg-background">
+          <div className="p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col bg-background">
             {/* Product Name */}
             <h2 className="text-3xl font-bold mb-4 text-balance">{product.name}</h2>
 
