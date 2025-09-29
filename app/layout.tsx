@@ -7,6 +7,8 @@ import { Suspense } from "react"
 import "./globals.css"
 import { CartProvider } from "@/components/cart-provider"
 import { CartSidebar } from "@/components/cart-sidebar"
+import { SearchProvider } from "@/components/search-provider"
+import { SearchSidebar } from "@/components/search-sidebar"
 import { Navigation } from "@/components/navigation"
 
 export const metadata: Metadata = {
@@ -23,12 +25,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <CartProvider>
-          <Navigation />
-          <Suspense fallback={null}>{children}</Suspense>
-          <CartSidebar />
-          <Analytics />
-        </CartProvider>
+        <SearchProvider>
+          <CartProvider>
+            <Navigation />
+            <Suspense fallback={null}>{children}</Suspense>
+            <CartSidebar />
+            <SearchSidebar />
+            <Analytics />
+          </CartProvider>
+        </SearchProvider>
       </body>
     </html>
   )

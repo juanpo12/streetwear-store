@@ -1,22 +1,32 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, Menu, X } from "lucide-react"
+import { ShoppingBag, Menu, X, Search } from "lucide-react"
 import { useState } from "react"
 import { useCart } from "./cart-provider"
+import { SearchModal } from "./search-modal"
+import { useSearch } from "./search-provider"
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { toggleCart, totalItems } = useCart()
-
+  const { toggleSearch } = useSearch()
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="text-streetwear-md text-primary">
-            URBAN
+          <Link href="/" className="flex items-center group">
+            <Image
+              src="/logo.jpg"
+              alt="Logo"
+              width={40}
+              height={40}
+              className="h-10 w-10 object-cover rounded-full shadow-lg ring-2 ring-background/20 transition-all duration-300 group-hover:shadow-xl group-hover:scale-105 group-hover:ring-accent/30"
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -34,6 +44,9 @@ export function Navigation() {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="icon" onClick={toggleSearch}>
+              <Search className="h-5 w-5" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={toggleCart} className="relative">
               <ShoppingBag className="h-5 w-5" />
               {totalItems > 0 && (
@@ -65,6 +78,9 @@ export function Navigation() {
           </div>
         )}
       </div>
+
+      {/* Search Modal */}
+      <SearchModal open={isSearchOpen} onOpenChange={setIsSearchOpen} />
     </nav>
   )
 }
