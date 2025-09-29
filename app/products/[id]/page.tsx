@@ -73,7 +73,7 @@ export default function ProductPage() {
       price: product.price,
       image: product.image,
       size: selectedSize,
-      color: selectedColor,
+      // color: selectedColor, // removed to match CartItem type
     })
     openCart()
   }
