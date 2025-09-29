@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { X, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,6 +34,7 @@ interface ApiResponse {
 }
 
 export function SearchModal({ open, onOpenChange }: SearchModalProps) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -112,6 +115,11 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     setError(null)
   }
 
+  const handleProductClick = (productId: number) => {
+    handleClose()
+    router.push(`/products/${productId}`)
+  }
+
   if (!open) return null
 
   return (
@@ -184,7 +192,11 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
             ) : (
               <div className="space-y-3">
                 {searchResults.map((product) => (
-                  <div key={product.id} className="flex gap-3 p-3 rounded-lg border border-border/20 backdrop-blur-sm bg-background/40 hover:bg-background/60 transition-all duration-200 cursor-pointer group">
+                  <div 
+                    key={product.id} 
+                    className="flex gap-3 p-3 rounded-lg border border-border/20 backdrop-blur-sm bg-background/40 hover:bg-background/60 transition-all duration-200 cursor-pointer group"
+                    onClick={() => handleProductClick(product.id)}
+                  >
                     <div className="relative w-16 h-16 rounded overflow-hidden">
                       <img
                         src={product.image || "/placeholder.svg"}

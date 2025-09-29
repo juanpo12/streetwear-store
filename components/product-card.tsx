@@ -2,11 +2,10 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ShoppingBag } from "lucide-react"
-import { useCart } from "./cart-provider"
-import { ProductModal } from "./product-modal"
 
 interface ProductCardProps {
   product: {
@@ -19,22 +18,13 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { addItem, openCart } = useCart()
-  const [showQuickBuy, setShowQuickBuy] = useState(false)
-
-  const handleAddToCart = () => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-    })
-    openCart()
+  const handleBuyClick = (e: React.MouseEvent) => {
+    // Permitir que el Link padre maneje la navegación
   }
 
   return (
-    <>
-      <Card className="group overflow-hidden border-0 shadow-none">
+    <Link href={`/products/${product.id}`}>
+      <Card className="group overflow-hidden border-0 shadow-none cursor-pointer transition-all hover:shadow-lg">
         <div className="aspect-square overflow-hidden bg-muted">
           <Image
             src={product.image || "/placeholder.svg"}
@@ -49,15 +39,17 @@ export function ProductCard({ product }: ProductCardProps) {
           <h3 className="font-semibold text-lg tracking-tight">{product.name}</h3>
           <div className="flex items-center justify-between">
             <span className="text-xl font-bold">${product.price}</span>
-            <Button size="sm" className="bg-primary hover:bg-accent gap-2" onClick={() => setShowQuickBuy(true)}>
+            <Button 
+              size="sm" 
+              className="bg-primary hover:bg-accent gap-2" 
+              onClick={handleBuyClick}
+            >
               <ShoppingBag className="h-4 w-4" />
               BUY
             </Button>
           </div>
         </div>
       </Card>
-
-      <ProductModal product={product} open={showQuickBuy} onOpenChange={setShowQuickBuy} />
-    </>
+    </Link>
   )
 }
