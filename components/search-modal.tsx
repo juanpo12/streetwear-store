@@ -10,79 +10,106 @@ interface SearchModalProps {
   onOpenChange: (open: boolean) => void
 }
 
-// Mock product data
-const mockProducts = [
-  {
-    id: 1,
-    name: "Oversized Black Hoodie",
-    price: 89,
-    image: "/oversized-black-hoodie-streetwear.png",
-    category: "Hoodies"
-  },
-  {
-    id: 2,
-    name: "Cargo Pants",
-    price: 129,
-    image: "/cargo-pants.png",
-    category: "Pants"
-  },
-  {
-    id: 3,
-    name: "Bomber Jacket",
-    price: 159,
-    image: "/bomber-jacket-streetwear.jpg",
-    category: "Jackets"
-  },
-  {
-    id: 4,
-    name: "Graphic T-Shirt",
-    price: 45,
-    image: "/graphic-t-shirt-streetwear-urban.jpg",
-    category: "T-Shirts"
-  },
-  {
-    id: 5,
-    name: "Wide Leg Jeans",
-    price: 119,
-    image: "/wide-leg-jeans-streetwear.jpg",
-    category: "Jeans"
-  },
-  {
-    id: 6,
-    name: "Black Bucket Hat",
-    price: 35,
-    image: "/black-bucket-hat-streetwear.jpg",
-    category: "Accessories"
-  }
-]
+interface Product {
+  id: number
+  name: string
+  price: number
+  image: string
+  category: string
+  description: string
+  sizes: string[]
+  colors: string[]
+  inStock: boolean
+  featured: boolean
+}
+
+interface ApiResponse {
+  success: boolean
+  data: Product[]
+  total: number
+  query: string
+  category?: string
+}
 
 export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState(mockProducts)
+  const [searchResults, setSearchResults] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
+  // Cargar productos iniciales cuando se abre el modal
   useEffect(() => {
+    if (open && searchResults.length === 0) {
+      fetchProducts()
+    }
+  }, [open])
+
+  // Buscar productos cuando cambia la query
+  useEffect(() => {
+    if (!open) return
+
     if (!searchQuery.trim()) {
-      setSearchResults(mockProducts)
+      fetchProducts()
       return
     }
 
-    setIsLoading(true)
     const timer = setTimeout(() => {
-      const filtered = mockProducts.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      setSearchResults(filtered)
-      setIsLoading(false)
+      searchProducts(searchQuery)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [searchQuery])
+  }, [searchQuery, open])
+
+  const fetchProducts = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/products?limit=8')
+      const data: ApiResponse = await response.json()
+      
+      if (data.success) {
+        setSearchResults(data.data)
+      } else {
+        setError('Error al cargar productos')
+      }
+    } catch (err) {
+      setError('Error de conexión')
+      console.error('Error fetching products:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const searchProducts = async (query: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
+      const data: ApiResponse = await response.json()
+      
+      if (data.success) {
+        setSearchResults(data.data)
+      } else {
+        setError('Error en la búsqueda')
+      }
+    } catch (err) {
+      setError('Error de conexión')
+      console.error('Error searching products:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const clearSearch = () => {
     setSearchQuery("")
-    setSearchResults(mockProducts)
+    fetchProducts()
+  }
+
+  const handleClose = () => {
+    onOpenChange(false)
+    setSearchQuery("")
+    setSearchResults([])
+    setError(null)
   }
 
   if (!open) return null
@@ -90,7 +117,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50 z-50" onClick={() => onOpenChange(false)} />
+      <div className="fixed inset-0 bg-black/50 z-50" onClick={handleClose} />
 
       {/* Sidebar */}
       <div className="fixed right-0 top-0 h-full w-full max-w-md z-50 shadow-xl backdrop-blur-md bg-background/80 border-l border-border/20">
@@ -98,7 +125,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border/20 backdrop-blur-sm bg-background/60">
             <h2 className="text-streetwear-sm">SEARCH PRODUCTS</h2>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+            <Button variant="ghost" size="icon" onClick={handleClose}>
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -129,16 +156,29 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
 
           {/* Search Results */}
           <div className="flex-1 overflow-y-auto p-4">
-            {isLoading ? (
+            {error ? (
+              <div className="text-center py-8">
+                <div className="text-red-500 mb-2">⚠️</div>
+                <p className="text-muted-foreground text-sm">{error}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => searchQuery ? searchProducts(searchQuery) : fetchProducts()}
+                  className="mt-2"
+                >
+                  Reintentar
+                </Button>
+              </div>
+            ) : isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="text-sm text-muted-foreground mt-2">Searching...</p>
+                <p className="text-sm text-muted-foreground mt-2">Buscando...</p>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="text-center py-8">
                 <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
-                  {searchQuery ? `No products found for "${searchQuery}"` : "Start typing to search products"}
+                  {searchQuery ? `No se encontraron productos para "${searchQuery}"` : "Escribe para buscar productos"}
                 </p>
               </div>
             ) : (
@@ -159,7 +199,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
                     </div>
                     <div className="flex items-center">
                       <Button size="sm" variant="outline" className="h-8 text-xs">
-                        View
+                        Ver
                       </Button>
                     </div>
                   </div>
@@ -172,8 +212,8 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           {searchResults.length > 0 && (
             <div className="p-4 border-t border-border/20 backdrop-blur-sm bg-background/60">
               <p className="text-xs text-muted-foreground text-center">
-                {searchResults.length} product{searchResults.length !== 1 ? 's' : ''} found
-                {searchQuery && ` for "${searchQuery}"`}
+                {searchResults.length} producto{searchResults.length !== 1 ? 's' : ''} encontrado{searchResults.length !== 1 ? 's' : ''}
+                {searchQuery && ` para "${searchQuery}"`}
               </p>
             </div>
           )}
