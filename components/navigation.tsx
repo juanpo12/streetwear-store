@@ -3,17 +3,27 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, Menu, X, Search } from "lucide-react"
+import { ShoppingBag, Menu, X, Search, User, LogOut } from "lucide-react"
 import { useState } from "react"
 import { useCart } from "./cart-provider"
 import { SearchModal } from "./search-modal"
 import { useSearch } from "./search-provider"
+import { useAuth } from "@/hooks/use-auth"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { toggleCart, totalItems } = useCart()
   const { toggleSearch } = useSearch()
+  const { user, loading, signOut, isAuthenticated } = useAuth()
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="container mx-auto px-4">
@@ -55,6 +65,51 @@ export function Navigation() {
                 </span>
               )}
             </Button>
+            
+            {/* Authentication */}
+            {!loading && (
+              <>
+                {isAuthenticated ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <User className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>
+                        {user?.user_metadata?.first_name || user?.email}
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/profile">Mi Perfil</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/orders">Mis Pedidos</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/wishlist">Lista de Deseos</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={signOut} className="text-red-600">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Cerrar Sesión
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <div className="hidden md:flex items-center space-x-2">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href="/auth/login">Iniciar Sesión</Link>
+                    </Button>
+                    <Button size="sm" asChild>
+                      <Link href="/auth/register">Registrarse</Link>
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+            
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -74,6 +129,43 @@ export function Navigation() {
               <Link href="/about" className="text-sm font-medium hover:text-accent transition-colors">
                 ABOUT
               </Link>
+              
+              {/* Mobile Authentication */}
+              {!loading && (
+                <div className="border-t pt-4 space-y-2">
+                  {isAuthenticated ? (
+                    <>
+                      <div className="text-sm text-muted-foreground mb-2">
+                        {user?.user_metadata?.first_name || user?.email}
+                      </div>
+                      <Link href="/profile" className="block text-sm font-medium hover:text-accent transition-colors">
+                        Mi Perfil
+                      </Link>
+                      <Link href="/orders" className="block text-sm font-medium hover:text-accent transition-colors">
+                        Mis Pedidos
+                      </Link>
+                      <Link href="/wishlist" className="block text-sm font-medium hover:text-accent transition-colors">
+                        Lista de Deseos
+                      </Link>
+                      <button 
+                        onClick={signOut} 
+                        className="block text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                      >
+                        Cerrar Sesión
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/auth/login" className="block text-sm font-medium hover:text-accent transition-colors">
+                        Iniciar Sesión
+                      </Link>
+                      <Link href="/auth/register" className="block text-sm font-medium hover:text-accent transition-colors">
+                        Registrarse
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
