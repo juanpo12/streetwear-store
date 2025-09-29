@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, ShoppingBag, Heart, Share2 } from "lucide-react"
+import { ArrowLeft, ShoppingBag, Heart, Share2, Facebook, Twitter, MessageCircle, Copy, X } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
 
 interface Product {
@@ -31,6 +32,8 @@ export default function ProductPage() {
   const [selectedColor, setSelectedColor] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showShareOptions, setShowShareOptions] = useState(false)
+  const shareMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -64,6 +67,23 @@ export default function ProductPage() {
     }
   }, [params.id])
 
+  // Close share menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) {
+        setShowShareOptions(false)
+      }
+    }
+
+    if (showShareOptions) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showShareOptions])
+
   const handleAddToCart = () => {
     if (!product) return
     
@@ -76,6 +96,58 @@ export default function ProductPage() {
       // color: selectedColor, // removed to match CartItem type
     })
     openCart()
+  }
+
+  const handleShare = async () => {
+    if (!product) return
+
+    // Check if Web Share API is supported
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${product.name} - URBAN THREADS`,
+          text: `¡Mira este increíble producto: ${product.name}!`,
+          url: window.location.href,
+        })
+      } catch (err) {
+        // User cancelled the share or error occurred
+        console.log('Share cancelled or failed:', err)
+      }
+    } else {
+      // Fallback: show manual share options
+      setShowShareOptions(!showShareOptions)
+    }
+  }
+
+  const shareToFacebook = () => {
+    const url = encodeURIComponent(window.location.href)
+    const text = encodeURIComponent(`¡Mira este increíble producto: ${product?.name}!`)
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank')
+    setShowShareOptions(false)
+  }
+
+  const shareToTwitter = () => {
+    const url = encodeURIComponent(window.location.href)
+    const text = encodeURIComponent(`¡Mira este increíble producto: ${product?.name}! ${window.location.href}`)
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank')
+    setShowShareOptions(false)
+  }
+
+  const shareToWhatsApp = () => {
+    const text = encodeURIComponent(`¡Mira este increíble producto: ${product?.name}! ${window.location.href}`)
+    window.open(`https://wa.me/?text=${text}`, '_blank')
+    setShowShareOptions(false)
+  }
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      alert('¡Enlace copiado al portapapeles!')
+      setShowShareOptions(false)
+    } catch (err) {
+      console.error('Error al copiar al portapapeles:', err)
+      alert('Error al copiar el enlace')
+    }
   }
 
   if (isLoading) {
@@ -237,10 +309,72 @@ export default function ProductPage() {
                   <Heart className="h-4 w-4 mr-2" />
                   Favoritos
                 </Button>
-                <Button variant="outline" size="lg" className="flex-1">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Compartir
-                </Button>
+                <div className="relative flex-1" ref={shareMenuRef}>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="w-full"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Compartir
+                  </Button>
+                  
+                  {/* Share Options Dropdown */}
+                  {showShareOptions && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-lg z-50 p-2">
+                      <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                        <span className="text-sm font-medium">Compartir producto</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setShowShareOptions(false)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="space-y-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-start"
+                          onClick={shareToFacebook}
+                        >
+                          <Facebook className="h-4 w-4 mr-2 text-blue-600" />
+                          Facebook
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-start"
+                          onClick={shareToTwitter}
+                        >
+                          <Twitter className="h-4 w-4 mr-2 text-blue-400" />
+                          Twitter
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-start"
+                          onClick={shareToWhatsApp}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2 text-green-600" />
+                          WhatsApp
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-start"
+                          onClick={copyToClipboard}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copiar enlace
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
