@@ -11,9 +11,10 @@ import { ArrowLeft, ShoppingBag, Heart, Share2, Facebook, Twitter, MessageCircle
 import { useCart } from "@/components/cart-provider"
 
 interface Product {
-  id: number
+  id: string
   name: string
-  price: number
+  price: string
+  priceNumeric: number
   image: string
   category: string
   description: string
@@ -21,6 +22,7 @@ interface Product {
   colors: string[]
   inStock: boolean
   featured: boolean
+  variants?: any[]
 }
 
 export default function ProductPage() {
@@ -39,20 +41,16 @@ export default function ProductPage() {
     const fetchProduct = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch(`/api/products?id=${params.id}`)
+        setError(null)
+        const response = await fetch(`/api/products/${params.id}`)
         const data = await response.json()
         
-        if (data.success && data.data.length > 0) {
-          const foundProduct = data.data.find((p: Product) => p.id === parseInt(params.id as string))
-          if (foundProduct) {
-            setProduct(foundProduct)
-            setSelectedSize(foundProduct.sizes[0] || "")
-            setSelectedColor(foundProduct.colors[0] || "")
-          } else {
-            setError("Producto no encontrado")
-          }
+        if (data.success && data.data) {
+          setProduct(data.data)
+          setSelectedSize(data.data.sizes[0] || "")
+          setSelectedColor(data.data.colors[0] || "")
         } else {
-          setError("Producto no encontrado")
+          setError(data.error || "Producto no encontrado")
         }
       } catch (err) {
         setError("Error al cargar el producto")
@@ -90,7 +88,7 @@ export default function ProductPage() {
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: product.priceNumeric,
       image: product.image,
       size: selectedSize,
       // color: selectedColor, // removed to match CartItem type
@@ -246,7 +244,7 @@ export default function ProductPage() {
             <h1 className="text-3xl font-bold tracking-tight">{product.name}</h1>
 
             {/* Price */}
-            <div className="text-2xl font-bold">${product.price}</div>
+            <div className="text-2xl font-bold">{product.price}</div>
 
             {/* Description */}
             <div className="prose prose-sm max-w-none">

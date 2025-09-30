@@ -1,104 +1,24 @@
 import { NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { products, categories, productImages, productVariants } from '@/lib/db/schema'
+import { eq, and, sql, ilike, or } from 'drizzle-orm'
+import { createClient } from '@supabase/supabase-js'
 
-// Mock product data - mismo que en /api/products pero para búsqueda
-const mockProducts = [
-  {
-    id: 1,
-    name: "Oversized Black Hoodie",
-    price: 89,
-    image: "/oversized-black-hoodie-streetwear.png",
-    category: "HOODIES",
-    description: "Premium oversized hoodie with streetwear aesthetic",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    colors: ["Black", "White", "Gray"],
-    inStock: true,
-    featured: true
-  },
-  {
-    id: 2,
-    name: "Cargo Pants",
-    price: 129,
-    image: "/cargo-pants.png",
-    category: "BOTTOMS",
-    description: "Tactical cargo pants with multiple pockets",
-    sizes: ["28", "30", "32", "34", "36"],
-    colors: ["Black", "Olive", "Khaki"],
-    inStock: true,
-    featured: true
-  },
-  {
-    id: 3,
-    name: "Bomber Jacket",
-    price: 159,
-    image: "/bomber-jacket-streetwear.jpg",
-    category: "JACKETS",
-    description: "Classic bomber jacket with modern streetwear twist",
-    sizes: ["S", "M", "L", "XL"],
-    colors: ["Black", "Navy", "Olive"],
-    inStock: true,
-    featured: false
-  },
-  {
-    id: 4,
-    name: "Graphic T-Shirt",
-    price: 45,
-    image: "/graphic-t-shirt-streetwear-urban.jpg",
-    category: "TEES",
-    description: "Urban graphic tee with bold streetwear design",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    colors: ["Black", "White", "Gray"],
-    inStock: true,
-    featured: true
-  },
-  {
-    id: 5,
-    name: "Wide Leg Jeans",
-    price: 119,
-    image: "/wide-leg-jeans-streetwear.jpg",
-    category: "BOTTOMS",
-    description: "Relaxed fit wide leg jeans for comfort and style",
-    sizes: ["28", "30", "32", "34", "36"],
-    colors: ["Blue", "Black", "Light Blue"],
-    inStock: true,
-    featured: false
-  },
-  {
-    id: 6,
-    name: "Black Bucket Hat",
-    price: 35,
-    image: "/black-bucket-hat-streetwear.jpg",
-    category: "ACCESSORIES",
-    description: "Classic bucket hat for streetwear enthusiasts",
-    sizes: ["One Size"],
-    colors: ["Black", "White", "Beige"],
-    inStock: true,
-    featured: false
-  },
-  {
-    id: 7,
-    name: "Boxy White T-Shirt",
-    price: 39,
-    image: "/boxy-fit-white-t-shirt-streetwear.jpg",
-    category: "TEES",
-    description: "Oversized boxy fit t-shirt in premium cotton",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    colors: ["White", "Black", "Gray"],
-    inStock: true,
-    featured: true
-  },
-  {
-    id: 8,
-    name: "Oversized Sweatshirt",
-    price: 75,
-    image: "/oversized-sweatshirt-streetwear.jpg",
-    category: "HOODIES",
-    description: "Comfortable oversized sweatshirt for everyday wear",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    colors: ["Gray", "Black", "Navy"],
-    inStock: true,
-    featured: false
-  }
-]
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+// Función para obtener URL pública de imagen de Supabase Storage
+function getPublicImageUrl(imagePath: string): string {
+  if (!imagePath) return '/placeholder.svg'
+  
+  const { data } = supabase.storage
+    .from('products')
+    .getPublicUrl(imagePath)
+  
+  return data.publicUrl
+}
 
 export async function GET(request: Request) {
   try {
@@ -107,40 +27,94 @@ export async function GET(request: Request) {
     const category = searchParams.get('category')
     const limit = searchParams.get('limit')
 
-    let filteredProducts = [...mockProducts]
-
-    // Buscar por query si se especifica
-    if (query) {
-      const searchTerm = query.toLowerCase()
-      filteredProducts = filteredProducts.filter(product =>
-        product.name.toLowerCase().includes(searchTerm) ||
-        product.category.toLowerCase().includes(searchTerm) ||
-        product.description.toLowerCase().includes(searchTerm)
+    if (!query) {
+      return NextResponse.json(
+        { success: false, error: 'Search query is required' },
+        { status: 400 }
       )
     }
 
-    // Filtrar por categoría si se especifica
-    if (category) {
-      filteredProducts = filteredProducts.filter(
-        product => product.category.toLowerCase() === category.toLowerCase()
-      )
-    }
+    try {
+      // Construir condiciones de búsqueda
+      const searchConditions = [
+        eq(products.isActive, true),
+        or(
+          ilike(products.name, `%${query}%`),
+          ilike(products.description, `%${query}%`),
+          ilike(categories.name, `%${query}%`)
+        )
+      ]
 
-    // Limitar la cantidad de productos si se especifica
-    if (limit) {
-      const limitNum = parseInt(limit)
-      if (!isNaN(limitNum)) {
-        filteredProducts = filteredProducts.slice(0, limitNum)
+      // Agregar filtro de categoría si se especifica
+      if (category) {
+        searchConditions.push(eq(categories.name, category.toUpperCase()))
       }
+
+      // Construir query base
+      let searchQuery = db
+        .select({
+          id: products.id,
+          name: products.name,
+          description: products.description,
+          price: products.price,
+          categoryName: categories.name,
+          isActive: products.isActive,
+          isFeatured: products.isFeatured,
+          createdAt: products.createdAt
+        })
+        .from(products)
+        .leftJoin(categories, eq(products.categoryId, categories.id))
+        .where(and(...searchConditions))
+
+      // Aplicar límite si se especifica
+      if (limit) {
+        const limitNum = parseInt(limit)
+        if (!isNaN(limitNum) && limitNum > 0) {
+          searchQuery = searchQuery.limit(limitNum)
+        }
+      }
+
+      const searchResults = await searchQuery
+
+      // Para cada producto, obtener su imagen principal
+      const finalProducts = await Promise.all(
+        searchResults.map(async (product) => {
+          const primaryImage = await db
+            .select({
+              url: productImages.url,
+              altText: productImages.altText
+            })
+            .from(productImages)
+            .where(eq(productImages.productId, product.id))
+            .orderBy(productImages.position)
+            .limit(1)
+
+          return {
+            ...product,
+            image: primaryImage.length > 0 
+              ? primaryImage[0].url
+              : '/placeholder.svg'
+          }
+        })
+      )
+
+      return NextResponse.json({
+        success: true,
+        data: finalProducts,
+        total: finalProducts.length,
+        query
+      })
+
+    } catch (dbError) {
+      console.error('Database connection failed:', dbError)
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Database connection failed',
+        details: dbError instanceof Error ? dbError.message : 'Unknown error'
+      }, { status: 500 })
     }
 
-    return NextResponse.json({
-      success: true,
-      data: filteredProducts,
-      total: filteredProducts.length,
-      query: query || '',
-      category: category || null
-    })
   } catch (error) {
     console.error('Error searching products:', error)
     return NextResponse.json(

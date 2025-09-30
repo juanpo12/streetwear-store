@@ -3,30 +3,101 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, Search } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearch } from "./search-provider"
 
-// Mock products data - will come from Supabase later
-const allProducts = [
-  { id: 1, name: "OVERSIZED HOODIE", price: 89, image: "/oversized-black-hoodie-streetwear.png", category: "HOODIES" },
-  { id: 2, name: "BOXY TEE", price: 45, image: "/boxy-fit-white-t-shirt-streetwear.jpg", category: "TEES" },
-  { id: 3, name: "CARGO PANTS", price: 95, image: "/baggy-cargo-pants-streetwear.jpg", category: "BOTTOMS" },
-  { id: 4, name: "DENIM JACKET", price: 120, image: "/cropped-denim-jacket-streetwear.jpg", category: "JACKETS" },
-  { id: 5, name: "GRAPHIC TEE", price: 42, image: "/graphic-t-shirt-streetwear-urban.jpg", category: "TEES" },
-  { id: 6, name: "DISTRESSED JEANS", price: 85, image: "/distressed-jeans-streetwear.jpg", category: "BOTTOMS" },
-]
+interface Product {
+  id: number
+  name: string
+  price: string
+  image: string
+  categoryName: string
+  description: string
+}
+
+interface ApiResponse {
+  success: boolean
+  data: Product[]
+  total: number
+  query: string
+}
 
 export function SearchSidebar() {
   const { isOpen, closeSearch } = useSearch()
   const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredProducts = allProducts.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  // Función para cargar productos iniciales
+  const fetchInitialProducts = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/products?limit=6')
+      const data = await response.json()
+      
+      if (data.success) {
+        setSearchResults(data.data || [])
+      } else {
+        setSearchResults([])
+      }
+    } catch (err) {
+      setError('Error de conexión')
+      setSearchResults([])
+      console.error('Error fetching initial products:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Función para buscar productos
+  const searchProducts = async (query: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&limit=10`)
+      const data: ApiResponse = await response.json()
+      
+      if (data.success) {
+        setSearchResults(data.data)
+      } else {
+        setError('Error en la búsqueda')
+        setSearchResults([])
+      }
+    } catch (err) {
+      setError('Error de conexión')
+      setSearchResults([])
+      console.error('Error searching products:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Cargar productos iniciales cuando se abre el sidebar
+  useEffect(() => {
+    if (isOpen && searchResults.length === 0 && !searchQuery) {
+      fetchInitialProducts()
+    }
+  }, [isOpen])
+
+  // Buscar productos cuando cambia la query
+  useEffect(() => {
+    if (!isOpen) return
+
+    if (!searchQuery.trim()) {
+      fetchInitialProducts()
+      return
+    }
+
+    const timer = setTimeout(() => {
+      searchProducts(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, isOpen])
 
   if (!isOpen) return null
 
@@ -64,21 +135,67 @@ export function SearchSidebar() {
 
             {/* Search Results */}
             <div className="flex-1 overflow-y-auto p-6">
-              {searchQuery === "" ? (
+              {isLoading ? (
                 <div className="text-center py-12">
-                  <Search className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground text-sm">Start typing to search products</p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground text-sm">Buscando productos...</p>
                 </div>
-              ) : filteredProducts.length === 0 ? (
+              ) : error ? (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground text-sm">No products found</p>
+                  <p className="text-red-500 text-sm">{error}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => searchQuery ? searchProducts(searchQuery) : fetchInitialProducts()}
+                  >
+                    Reintentar
+                  </Button>
+                </div>
+              ) : searchQuery === "" ? (
+                searchResults.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Search className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground text-sm">No hay productos disponibles</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground mb-4">Productos recientes</p>
+                    {searchResults.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/products/${product.id}`}
+                        onClick={closeSearch}
+                        className="flex gap-4 p-3 rounded-lg bg-background/40 backdrop-blur-sm border border-border/30 hover:bg-background/60 hover:border-border/50 transition-all group"
+                      >
+                        <div className="relative w-20 h-20 rounded overflow-hidden flex-shrink-0">
+                          <Image
+                            src={product.image || "/placeholder.svg"}
+                            alt={product.name}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform"
+                          />
+                        </div>
+                        <div className="flex-1 flex flex-col justify-center">
+                          <h3 className="font-medium text-sm mb-1">{product.name}</h3>
+                          <p className="text-xs text-muted-foreground mb-1">{product.categoryName}</p>
+                          <p className="text-sm font-semibold">{product.price}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )
+              ) : searchResults.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground text-sm">No se encontraron productos</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredProducts.map((product) => (
+                  <p className="text-xs text-muted-foreground mb-4">Resultados para "{searchQuery}"</p>
+                  {searchResults.map((product) => (
                     <Link
                       key={product.id}
-                      href={`/shop`}
+                      href={`/products/${product.id}`}
                       onClick={closeSearch}
                       className="flex gap-4 p-3 rounded-lg bg-background/40 backdrop-blur-sm border border-border/30 hover:bg-background/60 hover:border-border/50 transition-all group"
                     >
@@ -92,8 +209,8 @@ export function SearchSidebar() {
                       </div>
                       <div className="flex-1 flex flex-col justify-center">
                         <h3 className="font-medium text-sm mb-1">{product.name}</h3>
-                        <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
-                        <p className="text-sm font-semibold">${product.price}</p>
+                        <p className="text-xs text-muted-foreground mb-1">{product.categoryName}</p>
+                        <p className="text-sm font-semibold">{product.price}</p>
                       </div>
                     </Link>
                   ))}
