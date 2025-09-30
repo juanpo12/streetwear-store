@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { ArrowLeft, ShoppingBag, Heart, Share2, Facebook, Twitter, MessageCircle, Copy, X } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
+import { useFavorites } from "@/components/favorites-provider"
 
 interface Product {
   id: string
@@ -29,6 +30,7 @@ export default function ProductPage() {
   const params = useParams()
   const router = useRouter()
   const { addItem, openCart } = useCart()
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites()
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedSize, setSelectedSize] = useState<string>("")
   const [selectedColor, setSelectedColor] = useState<string>("")
@@ -94,6 +96,29 @@ export default function ProductPage() {
       // color: selectedColor, // removed to match CartItem type
     })
     openCart()
+  }
+
+  const handleToggleFavorite = () => {
+    if (!product) return
+    
+    const productForFavorites = {
+      id: parseInt(product.id),
+      name: product.name,
+      price: product.priceNumeric,
+      image: product.image,
+      category: product.category,
+      description: product.description,
+      sizes: product.sizes,
+      colors: product.colors,
+      inStock: product.inStock,
+      featured: product.featured
+    }
+    
+    if (isFavorite(parseInt(product.id))) {
+      removeFromFavorites(parseInt(product.id))
+    } else {
+      addToFavorites(productForFavorites)
+    }
   }
 
   const handleShare = async () => {
@@ -303,9 +328,20 @@ export default function ProductPage() {
               </Button>
 
               <div className="flex gap-2">
-                <Button variant="outline" size="lg" className="flex-1">
-                  <Heart className="h-4 w-4 mr-2" />
-                  Favoritos
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="flex-1"
+                  onClick={handleToggleFavorite}
+                >
+                  <Heart 
+                    className={`h-4 w-4 mr-2 ${
+                      isFavorite(parseInt(product.id)) 
+                        ? "fill-red-500 text-red-500" 
+                        : ""
+                    }`} 
+                  />
+                  {isFavorite(parseInt(product.id)) ? "En Favoritos" : "Favoritos"}
                 </Button>
                 <div className="relative flex-1" ref={shareMenuRef}>
                   <Button 
