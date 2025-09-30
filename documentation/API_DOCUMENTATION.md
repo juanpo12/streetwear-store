@@ -26,7 +26,7 @@ Esta documentación describe cómo usar las APIs implementadas en la tienda de s
 **Ejemplo de Request:**
 ```
 GET /api/products?featured=true&limit=4
-GET /api/products?category=HOODIES
+GET /api/products?category=Hoodies%20%26%20Sweatshirts
 GET /api/products
 ```
 
@@ -40,7 +40,7 @@ GET /api/products
       "name": "OVERSIZED HOODIE",
       "price": 89,
       "image": "/oversized-black-hoodie-streetwear.png",
-      "category": "HOODIES",
+      "category": "Hoodies & Sweatshirts",
       "description": "Comfortable oversized hoodie perfect for street style",
       "sizes": ["S", "M", "L", "XL"],
       "colors": ["Black", "White", "Gray"],
@@ -66,7 +66,7 @@ GET /api/products
 **Ejemplo de Request:**
 ```
 GET /api/products/search?q=hoodie
-GET /api/products/search?q=black&category=HOODIES&limit=5
+GET /api/products/search?q=black&category=Hoodies%20%26%20Sweatshirts&limit=5
 ```
 
 **Respuesta Exitosa:**
@@ -113,11 +113,11 @@ interface Product {
 
 ### Categorías Disponibles
 
-- `HOODIES` - Sudaderas con capucha
-- `TEES` - Camisetas
-- `BOTTOMS` - Pantalones y shorts
-- `JACKETS` - Chaquetas y abrigos
-- `ACCESSORIES` - Accesorios
+- `Hoodies & Sweatshirts` - Sudaderas con capucha
+- `T-Shirts` - Camisetas
+- `Pants` - Pantalones y shorts
+- `Jackets` - Chaquetas y abrigos
+- `Accessories` - Accesorios
 
 ## 💡 Ejemplos de Uso
 

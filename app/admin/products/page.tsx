@@ -315,11 +315,11 @@ export default function AdminProductsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="HOODIES">HOODIES</SelectItem>
-                      <SelectItem value="TEES">TEES</SelectItem>
-                      <SelectItem value="BOTTOMS">BOTTOMS</SelectItem>
-                      <SelectItem value="JACKETS">JACKETS</SelectItem>
-                      <SelectItem value="ACCESSORIES">ACCESSORIES</SelectItem>
+                      <SelectItem value="Hoodies & Sweatshirts">Hoodies & Sweatshirts</SelectItem>
+                      <SelectItem value="T-Shirts">T-Shirts</SelectItem>
+                      <SelectItem value="Pants">Pants</SelectItem>
+                      <SelectItem value="Jackets">Jackets</SelectItem>
+                      <SelectItem value="Accessories">Accessories</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

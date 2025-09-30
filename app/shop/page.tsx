@@ -17,7 +17,7 @@ interface Product {
   featured: boolean
 }
 
-const categories = ["ALL", "HOODIES", "TEES", "BOTTOMS", "JACKETS", "ACCESSORIES"]
+const categories = ["ALL", "Hoodies & Sweatshirts", "T-Shirts", "Pants", "Jackets", "Accessories"]
 const PRODUCTS_PER_PAGE = 8
 
 export default function ShopPage() {

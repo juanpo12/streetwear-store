@@ -140,7 +140,7 @@ export async function GET(request: Request) {
       const conditions = [eq(products.isActive, true)]
 
       if (category) {
-        conditions.push(eq(categories.name, category.toUpperCase()))
+        conditions.push(eq(categories.name, category))
       }
 
       if (featured === 'true') {

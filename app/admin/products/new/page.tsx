@@ -23,7 +23,7 @@ export default function NewProductPage() {
     colors: [] as string[],
   })
 
-  const categories = ["HOODIES", "TEES", "BOTTOMS", "JACKETS", "ACCESSORIES"]
+  const categories = ["Hoodies & Sweatshirts", "T-Shirts", "Pants", "Jackets", "Accessories"]
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"]
   const colors = ["BLACK", "WHITE", "GRAY", "NAVY", "OLIVE", "BROWN"]
 
