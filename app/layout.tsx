@@ -9,6 +9,7 @@ import { CartProvider } from "@/components/cart-provider"
 import { CartSidebar } from "@/components/cart-sidebar"
 import { SearchProvider } from "@/components/search-provider"
 import { SearchSidebar } from "@/components/search-sidebar"
+import { FavoritesProvider } from "@/components/favorites-provider"
 import { Navigation } from "@/components/navigation"
 
 export const metadata: Metadata = {
@@ -27,11 +28,13 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <SearchProvider>
           <CartProvider>
-            <Navigation />
-            <Suspense fallback={null}>{children}</Suspense>
-            <CartSidebar />
-            <SearchSidebar />
-            <Analytics />
+            <FavoritesProvider>
+              <Navigation />
+              <Suspense fallback={null}>{children}</Suspense>
+              <CartSidebar />
+              <SearchSidebar />
+              <Analytics />
+            </FavoritesProvider>
           </CartProvider>
         </SearchProvider>
       </body>
