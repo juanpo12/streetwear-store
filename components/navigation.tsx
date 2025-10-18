@@ -3,18 +3,20 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, Menu, X, Search } from "lucide-react"
+import { ShoppingBag, Menu, X, Search, Settings } from "lucide-react"
 import { useState } from "react"
 import { useCart } from "./cart-provider"
 import { SearchModal } from "./search-modal"
 import { useSearch } from "./search-provider"
 import { UserProfileDropdown } from "./user-profile-dropdown"
+import { useAdmin } from "@/hooks/use-admin"
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { toggleCart, totalItems } = useCart()
   const { toggleSearch } = useSearch()
+  const { isAdmin, loading: adminLoading } = useAdmin()
 
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
@@ -57,6 +59,14 @@ export function Navigation() {
                 </span>
               )}
             </Button>
+            {/* Admin Button - Solo visible para administradores */}
+            {!adminLoading && isAdmin && (
+              <Button variant="ghost" size="icon" asChild className="hidden md:flex">
+                <Link href="/admin" title="Panel de Administración">
+                  <Settings className="h-5 w-5" />
+                </Link>
+              </Button>
+            )}
             <UserProfileDropdown />
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -77,6 +87,13 @@ export function Navigation() {
               <Link href="/about" className="text-sm font-medium hover:text-accent transition-colors">
                 ABOUT
               </Link>
+              {/* Admin Link - Solo visible para administradores en móvil */}
+              {!adminLoading && isAdmin && (
+                <Link href="/admin" className="text-sm font-medium hover:text-accent transition-colors flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  ADMINISTRACIÓN
+                </Link>
+              )}
             </div>
           </div>
         )}
