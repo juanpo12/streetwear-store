@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CreatableSelect } from "@/components/ui/creatable-select"
-import { ArrowLeft, Upload } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
+import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useCategories, useSizes, useColors } from "@/hooks/use-products"
@@ -24,6 +25,8 @@ export default function NewProductPage() {
     sizes: [] as string[],
     colors: [] as string[],
   })
+
+  const [productImages, setProductImages] = useState<any[]>([])
 
   // Usar los hooks personalizados
   const { categories, loading: categoriesLoading, error: categoriesError, createCategory } = useCategories()
@@ -177,13 +180,11 @@ export default function NewProductPage() {
                   <CardTitle>PRODUCT IMAGES</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                    <Upload className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-4">Drag and drop images here, or click to select</p>
-                    <Button variant="outline" size="sm">
-                      SELECT FILES
-                    </Button>
-                  </div>
+                  <ImageUpload
+                    onImagesChange={setProductImages}
+                    maxImages={10}
+                    maxSizeInMB={5}
+                  />
                 </CardContent>
               </Card>
 
