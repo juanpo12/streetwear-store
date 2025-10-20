@@ -1,10 +1,13 @@
 "use client"
 
 import React, { useEffect, useMemo, useState } from "react"
+import { motion } from "framer-motion"
 import { ProductCard } from "@/components/product-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { useProducts } from "@/hooks/use-products"
+import { cn } from "@/lib/utils"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const ITEMS_PER_PAGE = 12
 
@@ -38,14 +41,14 @@ const ShopPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="flex justify-between items-center mb-6">
+      <div className="container mx-auto p-6">
+        <div className="flex justify-between items-center mb-8">
           <Skeleton className="h-8 w-40" />
           <Skeleton className="h-8 w-24" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-            <Skeleton key={i} className="h-72 w-full" />
+            <Skeleton key={i} className="h-72 w-full rounded-xl" />
           ))}
         </div>
       </div>
@@ -54,58 +57,93 @@ const ShopPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={() => fetchProducts()}>Reintentar</Button>
-        </div>
+      <div className="container mx-auto p-6 text-center">
+        <p className="text-red-600 mb-4">{error}</p>
+        <Button onClick={() => fetchProducts()}>Reintentar</Button>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <select
-          className="border rounded p-2"
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+    <div className="container mx-auto p-6 space-y-8">
+      {/* Categorías */}
+      <div className="flex flex-wrap items-center gap-2 justify-center">
+        {categories.map((cat) => (
+          <motion.button
+            key={cat}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSelectedCategory(cat)}
+            className={cn(
+              "px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200",
+              selectedCategory === cat
+                ? "bg-primary text-white border-primary shadow-md"
+                : "bg-white text-gray-600 hover:text-primary hover:border-primary/50"
+            )}
           >
-            {"<"}
-          </Button>
-          <span>
-            Página {currentPage} de {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          >
-            {">"}
-          </Button>
-        </div>
+            {cat}
+          </motion.button>
+        ))}
       </div>
 
+      {/* Productos */}
       {paginatedProducts.length === 0 ? (
         <p className="text-center text-muted-foreground">No hay productos para mostrar.</p>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <motion.div
+          layout
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+        >
           {paginatedProducts.map((product: any) => (
-            <ProductCard key={product.id} product={product} />
+            <motion.div
+              key={product.id}
+              layout
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ProductCard product={product} />
+            </motion.div>
           ))}
+        </motion.div>
+      )}
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-3 mt-8">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={cn(
+                  "h-8 w-8 rounded-md flex items-center justify-center text-sm font-medium transition-colors",
+                  currentPage === i + 1
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100"
+                )}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       )}
     </div>
