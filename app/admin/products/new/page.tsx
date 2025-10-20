@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Upload } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export default function NewProductPage() {
   const [formData, setFormData] = useState({
@@ -23,9 +23,58 @@ export default function NewProductPage() {
     colors: [] as string[],
   })
 
-  const categories = ["Hoodies & Sweatshirts", "T-Shirts", "Pants", "Jackets", "Accessories"]
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL"]
-  const colors = ["BLACK", "WHITE", "GRAY", "NAVY", "OLIVE", "BROWN"]
+  // Estados para los datos dinámicos
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([])
+  const [sizes, setSizes] = useState<string[]>([])
+  const [colors, setColors] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Funciones para cargar datos desde los endpoints
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories')
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data)
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
+  const fetchSizes = async () => {
+    try {
+      const response = await fetch('/api/sizes')
+      if (response.ok) {
+        const data = await response.json()
+        setSizes(data)
+      }
+    } catch (error) {
+      console.error('Error fetching sizes:', error)
+    }
+  }
+
+  const fetchColors = async () => {
+    try {
+      const response = await fetch('/api/colors')
+      if (response.ok) {
+        const data = await response.json()
+        setColors(data)
+      }
+    } catch (error) {
+      console.error('Error fetching colors:', error)
+    }
+  }
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      await Promise.all([fetchCategories(), fetchSizes(), fetchColors()])
+      setLoading(false)
+    }
+    loadData()
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -107,12 +156,12 @@ export default function NewProductPage() {
                     <Label htmlFor="category">Category</Label>
                     <Select onValueChange={(value) => setFormData({ ...formData, category: value })}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={loading ? "Loading categories..." : "Select category"} />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -129,44 +178,56 @@ export default function NewProductPage() {
                   <div>
                     <Label>Available Sizes</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {sizes.map((size) => (
-                        <Button
-                          key={size}
-                          type="button"
-                          variant={formData.sizes.includes(size) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            const newSizes = formData.sizes.includes(size)
-                              ? formData.sizes.filter((s) => s !== size)
-                              : [...formData.sizes, size]
-                            setFormData({ ...formData, sizes: newSizes })
-                          }}
-                        >
-                          {size}
-                        </Button>
-                      ))}
+                      {loading ? (
+                        <p className="text-sm text-muted-foreground">Loading sizes...</p>
+                      ) : sizes.length > 0 ? (
+                        sizes.map((size) => (
+                          <Button
+                            key={size.id}
+                            type="button"
+                            variant={formData.sizes.includes(size.name) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                              const newSizes = formData.sizes.includes(size.name)
+                                ? formData.sizes.filter((s) => s !== size.name)
+                                : [...formData.sizes, size.name]
+                              setFormData({ ...formData, sizes: newSizes })
+                            }}
+                          >
+                            {size.name}
+                          </Button>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No sizes available</p>
+                      )}
                     </div>
                   </div>
 
                   <div>
                     <Label>Available Colors</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {colors.map((color) => (
-                        <Button
-                          key={color}
-                          type="button"
-                          variant={formData.colors.includes(color) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            const newColors = formData.colors.includes(color)
-                              ? formData.colors.filter((c) => c !== color)
-                              : [...formData.colors, color]
-                            setFormData({ ...formData, colors: newColors })
-                          }}
-                        >
-                          {color}
-                        </Button>
-                      ))}
+                      {loading ? (
+                        <p className="text-sm text-muted-foreground">Loading colors...</p>
+                      ) : colors.length > 0 ? (
+                        colors.map((color) => (
+                          <Button
+                            key={color.id}
+                            type="button"
+                            variant={formData.colors.includes(color.name) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                              const newColors = formData.colors.includes(color.name)
+                                ? formData.colors.filter((c) => c !== color.name)
+                                : [...formData.colors, color.name]
+                              setFormData({ ...formData, colors: newColors })
+                            }}
+                          >
+                            {color.name}
+                          </Button>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No colors available</p>
+                      )}
                     </div>
                   </div>
                 </CardContent>

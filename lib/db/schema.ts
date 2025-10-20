@@ -37,6 +37,27 @@ export const categories = pgTable('categories', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
+// Sizes table
+export const sizes = pgTable('sizes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Colors table
+export const colors = pgTable('colors', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(),
+  hexCode: text('hex_code'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
 // Products table
 export const products = pgTable('products', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -252,6 +273,14 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
 }))
 
+export const sizesRelations = relations(sizes, ({ many }) => ({
+  // Add relations here if needed in the future
+}))
+
+export const colorsRelations = relations(colors, ({ many }) => ({
+  // Add relations here if needed in the future
+}))
+
 export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, {
     fields: [products.categoryId],
@@ -397,6 +426,10 @@ export type Profile = typeof profiles.$inferSelect
 export type NewProfile = typeof profiles.$inferInsert
 export type Category = typeof categories.$inferSelect
 export type NewCategory = typeof categories.$inferInsert
+export type Size = typeof sizes.$inferSelect
+export type NewSize = typeof sizes.$inferInsert
+export type Color = typeof colors.$inferSelect
+export type NewColor = typeof colors.$inferInsert
 export type Product = typeof products.$inferSelect
 export type NewProduct = typeof products.$inferInsert
 export type ProductImage = typeof productImages.$inferSelect
