@@ -70,6 +70,7 @@ export const products = pgTable('products', {
   costPrice: decimal('cost_price', { precision: 10, scale: 2 }),
   sku: text('sku').unique(),
   barcode: text('barcode'),
+  stock: integer('stock').default(0).notNull(),
   trackQuantity: boolean('track_quantity').default(true).notNull(),
   continueSellingWhenOutOfStock: boolean('continue_selling_when_out_of_stock').default(false).notNull(),
   requiresShipping: boolean('requires_shipping').default(true).notNull(),

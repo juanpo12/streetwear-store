@@ -25,7 +25,7 @@ interface CreateProductInput {
   price: number
   compareAtPrice?: number
   categoryId?: string
-  sku?: string
+  stock?: number
   weight?: number
   tags?: string[]
   metaTitle?: string

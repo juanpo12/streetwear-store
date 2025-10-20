@@ -16,7 +16,9 @@ interface Product {
   name: string
   price: string
   priceNumeric: number
+  stock: number
   image: string
+  images: { url: string; altText: string }[]
   category: string
   description: string
   sizes: string[]
@@ -34,6 +36,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedSize, setSelectedSize] = useState<string>("")
   const [selectedColor, setSelectedColor] = useState<string>("")
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showShareOptions, setShowShareOptions] = useState(false)
@@ -44,7 +47,7 @@ export default function ProductPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const response = await fetch(`/api/products/${params.id}`)
+        const response = await fetch(`/api/products?id=${params.id}`)
         const data = await response.json()
         
         if (data.success && data.data) {
@@ -232,18 +235,48 @@ export default function ProductPage() {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Product Image */}
+          {/* Product Images Gallery */}
           <div className="space-y-4">
+            {/* Main Image */}
             <div className="aspect-square overflow-hidden rounded-lg bg-muted">
               <Image
-                src={product.image || "/placeholder.svg"}
-                alt={product.name}
+                src={product.images && product.images.length > 0 
+                  ? product.images[selectedImageIndex]?.url 
+                  : product.image || "/placeholder.svg"}
+                alt={product.images && product.images.length > 0 
+                  ? product.images[selectedImageIndex]?.altText 
+                  : product.name}
                 width={600}
                 height={600}
                 className="h-full w-full object-cover"
                 priority
               />
             </div>
+            
+            {/* Thumbnail Images */}
+            {product.images && product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`aspect-square overflow-hidden rounded-lg bg-muted border-2 transition-colors ${
+                      selectedImageIndex === index 
+                        ? 'border-primary' 
+                        : 'border-transparent hover:border-muted-foreground'
+                    }`}
+                  >
+                    <Image
+                      src={image.url}
+                      alt={image.altText}
+                      width={150}
+                      height={150}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Details */}
@@ -270,6 +303,17 @@ export default function ProductPage() {
 
             {/* Price */}
             <div className="text-2xl font-bold">{product.price}</div>
+
+            {/* Stock Information */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Stock disponible:</span>
+              <span className={`text-sm font-medium ${
+                product.stock > 10 ? 'text-green-600' : 
+                product.stock > 0 ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {product.stock > 0 ? `${product.stock} unidades` : 'Agotado'}
+              </span>
+            </div>
 
             {/* Description */}
             <div className="prose prose-sm max-w-none">

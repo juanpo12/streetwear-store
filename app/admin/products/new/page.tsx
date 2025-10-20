@@ -26,7 +26,7 @@ export default function NewProductPage() {
     price: "",
     compareAtPrice: "",
     category: "",
-    sku: "",
+    stock: "",
     weight: "",
     metaTitle: "",
     metaDescription: "",
@@ -71,7 +71,7 @@ export default function NewProductPage() {
       price: parseFloat(formData.price),
       compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : undefined,
       category: formData.category,
-      sku: formData.sku,
+      stock: formData.stock ? parseInt(formData.stock) : 0,
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
@@ -141,12 +141,13 @@ export default function NewProductPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="sku">SKU</Label>
+                      <Label htmlFor="stock">Stock</Label>
                       <Input
-                        id="sku"
-                        placeholder="e.g., HOODIE-001"
-                        value={formData.sku}
-                        onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                        id="stock"
+                        type="number"
+                        placeholder="100"
+                        value={formData.stock}
+                        onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                       />
                     </div>
                   </div>

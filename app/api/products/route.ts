@@ -80,6 +80,7 @@ export async function GET(request: Request) {
             name: products.name,
             description: products.description,
             price: products.price,
+            stock: products.stock,
             categoryName: categories.name,
             isActive: products.isActive,
             isFeatured: products.isFeatured,
@@ -116,12 +117,14 @@ export async function GET(request: Request) {
           name: productData.name,
           price: formatPriceToARS(parseFloat(productData.price)),
           priceNumeric: parseFloat(productData.price),
+          stock: productData.stock || 0,
           image: images.length > 0 ? images[0].url : '/placeholder.svg',
+          images: images.map(img => ({ url: img.url, altText: img.altText })),
           category: productData.categoryName || 'GENERAL',
           description: productData.description || '',
           sizes: [...new Set(variants.map(v => v.title).filter(Boolean))],
           colors: ['Black'], // Por ahora hardcodeado, se puede expandir
-          inStock: productData.isActive,
+          inStock: productData.isActive && (productData.stock || 0) > 0,
           featured: productData.isFeatured
         }
 
@@ -150,6 +153,7 @@ export async function GET(request: Request) {
           name: products.name,
           description: products.description,
           price: products.price,
+          stock: products.stock,
           categoryName: categories.name,
           isActive: products.isActive,
           isFeatured: products.isFeatured,
@@ -282,7 +286,7 @@ export async function POST(request: Request) {
       price,
       compareAtPrice,
       categoryId,
-      sku,
+      stock,
       weight,
       tags,
       metaTitle,
@@ -307,6 +311,17 @@ export async function POST(request: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
 
+    // Generar SKU automáticamente basado en el nombre del producto
+    const generateSKU = (productName: string) => {
+      const prefix = productName.toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 6)
+      const timestamp = Date.now().toString().slice(-6)
+      return `${prefix}-${timestamp}`
+    }
+
+    const autoSKU = generateSKU(name)
+
     try {
       // Crear el producto
       const newProduct = await db
@@ -319,7 +334,8 @@ export async function POST(request: Request) {
           price: price.toString(),
           compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
           categoryId: categoryId || null,
-          sku,
+          sku: autoSKU,
+          stock: stock || 0,
           weight: weight ? weight.toString() : null,
           weightUnit: 'kg',
           tags: tags || [],
@@ -372,7 +388,7 @@ export async function POST(request: Request) {
               title: variantTitle,
               price: price.toString(),
               compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
-              sku: sku ? `${sku}-${size.toLowerCase()}-${color.toLowerCase()}` : null,
+              sku: autoSKU ? `${autoSKU}-${size.toLowerCase()}-${color.toLowerCase()}` : null,
               inventoryQuantity: 0,
               position: variants.length,
               isActive: true
