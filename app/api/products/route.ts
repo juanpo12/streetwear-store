@@ -185,8 +185,8 @@ export async function GET(request: Request) {
 
       // Obtener imágenes para todos los productos
       const productIds = productsData.map(p => p.id)
-      let allImages = []
-      let allVariants = []
+      let allImages: { productId: string; url: string; altText: string | null; position: number }[] = []
+      let allVariants: { productId: string; title: string; sku: string | null }[] = []
       
       if (productIds.length > 0) {
         allImages = await db
