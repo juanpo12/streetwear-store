@@ -2,7 +2,8 @@
 
 import { useCart } from "./cart-provider"
 import { Button } from "@/components/ui/button"
-import { X, Plus, Minus, ShoppingBag } from "lucide-react"
+import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Tag, Package } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 export function CartSidebar() {
   const { state, closeCart, updateQuantity, removeItem, totalPrice, totalItems } = useCart()
@@ -12,66 +13,147 @@ export function CartSidebar() {
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50 z-50" onClick={closeCart} />
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity" 
+        onClick={closeCart} 
+      />
 
       {/* Sidebar */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-background z-50 shadow-xl">
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-background z-50 shadow-2xl animate-in slide-in-from-right duration-300">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-streetwear-sm">CART ({totalItems})</h2>
-            <Button variant="ghost" size="icon" onClick={closeCart}>
-              <X className="h-5 w-5" />
-            </Button>
+          <div className="relative p-6 border-b bg-gradient-to-r from-background to-muted/20">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <ShoppingBag className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Tu Carrito</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={closeCart}
+                className="rounded-full hover:bg-muted hover:rotate-90 transition-all duration-300"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            {/* Progress bar
+            {totalItems > 0 && (
+              <div className="mt-4">
+                <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                  <span>Envío gratis desde $1000</span>
+                  <span>${totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 rounded-full"
+                    style={{ width: `${Math.min((totalPrice / 1000) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )} */}
           </div>
 
           {/* Cart Items */}
           <div className="flex-1 overflow-y-auto p-4">
             {state.items.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Your cart is empty</p>
+              <div className="text-center py-16">
+                <div className="inline-block p-8 rounded-3xl bg-muted/30 mb-6">
+                  <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Tu carrito está vacío</h3>
+                <p className="text-muted-foreground mb-6">
+                  Agrega productos para comenzar tu compra
+                </p>
+                <Button 
+                  onClick={closeCart}
+                  className="rounded-full px-6"
+                >
+                  Ir a la tienda
+                </Button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {state.items.map((item) => (
-                  <div key={item.id} className="flex gap-4 p-4 border rounded-lg">
-                    <div className="relative w-16 h-16 rounded overflow-hidden">
+              <div className="space-y-3">
+                {state.items.map((item, index) => (
+                  <div 
+                    key={item.id} 
+                    className="group relative flex gap-4 p-4 border-2 rounded-2xl hover:border-primary/50 transition-all duration-300 hover:shadow-md bg-card"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    {/* Product Image */}
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                       <img
                         src={item.image || "/placeholder.svg"}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
+                      {item.size && (
+                        <Badge 
+                          variant="secondary" 
+                          className="absolute top-1 right-1 text-xs px-1.5 py-0.5"
+                        >
+                          {item.size}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex-1 space-y-2">
-                      <h3 className="font-medium text-sm">{item.name}</h3>
-                      <p className="text-sm text-muted-foreground">${item.price}</p>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 bg-transparent"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="text-sm w-8 text-center">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 bg-transparent"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
+
+                    {/* Product Details */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-sm leading-tight line-clamp-2">
+                          {item.name}
+                        </h3>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => removeItem(item.id)}
-                          className="ml-auto text-xs"
+                          className="h-8 w-8 rounded-full hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 transition-all flex-shrink-0"
                         >
-                          Remove
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-primary">
+                          ${item.price.toFixed(2)}
+                        </span>
+                        
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-2 bg-muted/50 rounded-full p-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-full hover:bg-background"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="text-sm font-semibold w-8 text-center">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-full hover:bg-background"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Subtotal */}
+                      <div className="text-xs text-muted-foreground">
+                        Subtotal: ${(item.price * item.quantity).toFixed(2)}
                       </div>
                     </div>
                   </div>
@@ -82,13 +164,57 @@ export function CartSidebar() {
 
           {/* Footer */}
           {state.items.length > 0 && (
-            <div className="border-t p-4 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-streetwear-sm">TOTAL</span>
-                <span className="text-streetwear-sm">${totalPrice.toFixed(2)}</span>
+            <div className="border-t bg-gradient-to-t from-muted/20 to-background p-6 space-y-4">
+              {/* Benefits */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-xl p-2">
+                  <Package className="h-4 w-4 text-primary" />
+                  <span>Envío 24-48h</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-xl p-2">
+                  <Tag className="h-4 w-4 text-primary" />
+                  <span>Mejor precio</span>
+                </div>
               </div>
-              <Button className="w-full" size="lg">
-                CHECKOUT
+
+              {/* Subtotal */}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>${totalPrice.toFixed(2)}</span>
+                </div>
+                {/* <div className="flex justify-between text-muted-foreground">
+                  <span>Envío</span>
+                  <span className="text-green-600 font-medium">
+                    {totalPrice >= 1000 ? 'GRATIS' : '$50.00'}
+                  </span>
+                </div> */}
+              </div>
+
+              {/* Total */}
+              <div className="flex justify-between items-center py-4 border-t border-b">
+                <span className="text-lg font-bold">TOTAL</span>
+                <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  $ {totalPrice.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Checkout Button */}
+              <Button 
+                className="w-full h-14 text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 bg-gradient-to-r from-primary to-accent"
+                size="lg"
+              >
+                FINALIZAR COMPRA
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+
+              {/* Continue Shopping */}
+              <Button 
+                variant="ghost" 
+                className="w-full rounded-xl"
+                onClick={closeCart}
+              >
+                Continuar comprando
               </Button>
             </div>
           )}
