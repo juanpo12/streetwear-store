@@ -100,7 +100,6 @@ export async function GET(
       }
 
       const product = productResult[0]
-
       // Obtener imágenes del producto
       const imagesAll = await db
         .select({
