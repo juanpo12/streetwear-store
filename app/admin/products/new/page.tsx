@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CreatableSelect } from "@/components/ui/creatable-select"
 import { ArrowLeft, Upload } from "lucide-react"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useCategories, useSizes, useColors } from "@/hooks/use-products"
 
 export default function NewProductPage() {
   const [formData, setFormData] = useState({
@@ -23,58 +25,13 @@ export default function NewProductPage() {
     colors: [] as string[],
   })
 
-  // Estados para los datos dinámicos
-  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([])
-  const [sizes, setSizes] = useState<{ id: string; name: string; displayOrder: number }[]>([])
-  const [colors, setColors] = useState<{ id: string; name: string; hexCode: string | null; displayOrder: number }[]>([])
-  const [loading, setLoading] = useState(true)
+  // Usar los hooks personalizados
+  const { categories, loading: categoriesLoading, error: categoriesError, createCategory } = useCategories()
+  const { sizes, loading: sizesLoading, error: sizesError, createSize } = useSizes()
+  const { colors, loading: colorsLoading, error: colorsError, createColor } = useColors()
 
-  // Funciones para cargar datos desde los endpoints
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch('/api/categories')
-      if (response.ok) {
-        const data = await response.json()
-        setCategories(data)
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }
-
-  const fetchSizes = async () => {
-    try {
-      const response = await fetch('/api/sizes')
-      if (response.ok) {
-        const data = await response.json()
-        setSizes(data)
-      }
-    } catch (error) {
-      console.error('Error fetching sizes:', error)
-    }
-  }
-
-  const fetchColors = async () => {
-    try {
-      const response = await fetch('/api/colors')
-      if (response.ok) {
-        const data = await response.json()
-        setColors(data)
-      }
-    } catch (error) {
-      console.error('Error fetching colors:', error)
-    }
-  }
-
-  // Cargar datos al montar el componente
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true)
-      await Promise.all([fetchCategories(), fetchSizes(), fetchColors()])
-      setLoading(false)
-    }
-    loadData()
-  }, [])
+  // Loading general
+  const loading = categoriesLoading || sizesLoading || colorsLoading
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -154,18 +111,23 @@ export default function NewProductPage() {
 
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={loading ? "Loading categories..." : "Select category"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <CreatableSelect
+                      options={categories.map(cat => ({ id: cat.id, name: cat.name }))}
+                      value={formData.category ? [categories.find(cat => cat.id === formData.category)?.name || formData.category] : []}
+                      onChange={(value) => {
+                        const selectedCategory = categories.find(cat => cat.name === value[0])
+                        setFormData({ ...formData, category: selectedCategory?.id || value[0] || "" })
+                      }}
+                      onCreateOption={async (name) => {
+                        const newCategory = await createCategory({ name })
+                        if (newCategory) {
+                          setFormData({ ...formData, category: newCategory.id })
+                        }
+                      }}
+                      placeholder={loading ? "Loading categories..." : "Select or create category"}
+                      loading={categoriesLoading}
+                      multiple={false}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -177,58 +139,32 @@ export default function NewProductPage() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label>Available Sizes</Label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {loading ? (
-                        <p className="text-sm text-muted-foreground">Loading sizes...</p>
-                      ) : sizes.length > 0 ? (
-                        sizes.map((size) => (
-                          <Button
-                            key={size.id}
-                            type="button"
-                            variant={formData.sizes.includes(size.name) ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => {
-                              const newSizes = formData.sizes.includes(size.name)
-                                ? formData.sizes.filter((s) => s !== size.name)
-                                : [...formData.sizes, size.name]
-                              setFormData({ ...formData, sizes: newSizes })
-                            }}
-                          >
-                            {size.name}
-                          </Button>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No sizes available</p>
-                      )}
-                    </div>
+                    <CreatableSelect
+                      options={sizes.map(size => ({ id: size.id, name: size.name }))}
+                      value={formData.sizes}
+                      onChange={(value) => setFormData({ ...formData, sizes: value })}
+                      onCreateOption={async (name) => {
+                        await createSize({ name })
+                      }}
+                      placeholder={loading ? "Loading sizes..." : "Select or create sizes"}
+                      loading={sizesLoading}
+                      multiple={true}
+                    />
                   </div>
 
                   <div>
                     <Label>Available Colors</Label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {loading ? (
-                        <p className="text-sm text-muted-foreground">Loading colors...</p>
-                      ) : colors.length > 0 ? (
-                        colors.map((color) => (
-                          <Button
-                            key={color.id}
-                            type="button"
-                            variant={formData.colors.includes(color.name) ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => {
-                              const newColors = formData.colors.includes(color.name)
-                                ? formData.colors.filter((c) => c !== color.name)
-                                : [...formData.colors, color.name]
-                              setFormData({ ...formData, colors: newColors })
-                            }}
-                          >
-                            {color.name}
-                          </Button>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No colors available</p>
-                      )}
-                    </div>
+                    <CreatableSelect
+                      options={colors.map(color => ({ id: color.id, name: color.name }))}
+                      value={formData.colors}
+                      onChange={(value) => setFormData({ ...formData, colors: value })}
+                      onCreateOption={async (name) => {
+                        await createColor({ name })
+                      }}
+                      placeholder={loading ? "Loading colors..." : "Select or create colors"}
+                      loading={colorsLoading}
+                      multiple={true}
+                    />
                   </div>
                 </CardContent>
               </Card>

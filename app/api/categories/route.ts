@@ -30,13 +30,18 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { name, slug, description, } = await req.json()
+    const { name, slug, description } = await req.json()
+
+    // Generate slug from name if not provided
+    const categorySlug = slug || name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
 
     const newCategory = await db
       .insert(categories)
       .values({
         name,
-        slug,
+        slug: categorySlug,
         description,
         imageUrl: null,
         isActive: true,

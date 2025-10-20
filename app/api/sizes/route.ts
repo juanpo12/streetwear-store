@@ -25,3 +25,38 @@ export async function GET() {
     )
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    const { name, displayOrder } = body
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'Name is required' },
+        { status: 400 }
+      )
+    }
+
+    const newSize = await db
+      .insert(sizes)
+      .values({
+        name,
+        displayOrder: displayOrder || 0,
+        isActive: true,
+      })
+      .returning({
+        id: sizes.id,
+        name: sizes.name,
+        displayOrder: sizes.displayOrder,
+      })
+
+    return NextResponse.json(newSize[0], { status: 201 })
+  } catch (error) {
+    console.error('Error creating size:', error)
+    return NextResponse.json(
+      { error: 'Failed to create size' },
+      { status: 500 }
+    )
+  }
+}
