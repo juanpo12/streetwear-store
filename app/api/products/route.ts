@@ -7,13 +7,14 @@ import { eq, and, sql, inArray } from 'drizzle-orm'
 // Función para verificar conectividad de base de datos
 async function isDatabaseAvailable(): Promise<boolean> {
   try {
-    // Verificar si las variables de entorno están configuradas
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    // Validar que exista la URL de base de datos
+    if (!process.env.DATABASE_URL) {
+      console.log('DATABASE_URL missing')
       return false
     }
-    
+
     // Intentar una consulta simple y rápida
-    await db.select().from(products).limit(1)
+    await db.select({ id: products.id }).from(products).limit(1)
     return true
   } catch (error) {
     console.log('Database unavailable:', error)
