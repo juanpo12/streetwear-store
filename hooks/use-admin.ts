@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './use-auth'
-import { createClient } from '@/lib/supabase/client'
 
 export function useAdmin() {
   const { user } = useAuth()
@@ -17,23 +16,14 @@ export function useAdmin() {
 
       try {
         setAdminLoading(true)
-        const supabase = createClient()
-        
-        // Query the database using Supabase client to check user role
-        const { data: userRecord, error } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-
-        if (error) {
-          console.error('Error checking admin role:', error)
+        const res = await fetch('/api/users/me', { credentials: 'include' })
+        const json = await res.json()
+        if (!res.ok || !json?.success) {
+          console.error('Error checking admin role:', json?.error || res.statusText)
           setIsAdmin(false)
           return
         }
-
-        const hasAdminRole = userRecord && userRecord.role === 'admin'
-        setIsAdmin(hasAdminRole)
+        setIsAdmin(json.isAdmin === true || json?.data?.role === 'admin')
       } catch (error) {
         console.error('Error checking admin role:', error)
         setIsAdmin(false)

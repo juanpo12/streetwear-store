@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
-import { createClient } from "@/lib/supabase/client"
 
 interface Product {
   id: number
@@ -27,21 +26,17 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const { user, isAuthenticated } = useAuth()
-  const supabase = createClient()
 
   // Load favorites from localStorage for non-authenticated users
-  // or from Supabase for authenticated users
+  // or from per-user localStorage for authenticated users
   useEffect(() => {
     const loadFavorites = async () => {
       if (isAuthenticated && user) {
-        // TODO: Load from Supabase when favorites table is ready
-        // For now, use localStorage
         const stored = localStorage.getItem(`favorites_${user.id}`)
         if (stored) {
           setFavorites(JSON.parse(stored))
         }
       } else {
-        // Load from localStorage for guest users
         const stored = localStorage.getItem('favorites_guest')
         if (stored) {
           setFavorites(JSON.parse(stored))
