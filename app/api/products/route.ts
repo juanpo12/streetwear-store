@@ -100,17 +100,29 @@ export async function GET(request: Request) {
         }
 
         // Obtener imágenes del producto
-        const images = await db
-          .select()
-          .from(productImages)
-          .where(eq(productImages.productId, id))
-          .orderBy(productImages.position)
+        let images: { url: string; altText: string | null; position: number }[] = []
+        try {
+          images = await db
+            .select()
+            .from(productImages)
+            .where(eq(productImages.productId, id))
+            .orderBy(productImages.position)
+        } catch (e) {
+          console.error('Failed to fetch product images:', e)
+          images = []
+        }
 
         // Obtener variantes del producto (para tallas)
-        const variants = await db
-          .select()
-          .from(productVariants)
-          .where(eq(productVariants.productId, id))
+        let variants: { title: string; sku: string | null }[] = []
+        try {
+          variants = await db
+            .select()
+            .from(productVariants)
+            .where(eq(productVariants.productId, id))
+        } catch (e) {
+          console.error('Failed to fetch product variants:', e)
+          variants = []
+        }
 
         const productData = product[0]
         const sizesFromTitle = variants
@@ -190,17 +202,27 @@ export async function GET(request: Request) {
       let allVariants: { productId: string; title: string; sku: string | null }[] = []
       
       if (productIds.length > 0) {
-        allImages = await db
-          .select()
-          .from(productImages)
-          .where(inArray(productImages.productId, productIds))
-          .orderBy(productImages.position)
+        try {
+          allImages = await db
+            .select()
+            .from(productImages)
+            .where(inArray(productImages.productId, productIds))
+            .orderBy(productImages.position)
+        } catch (e) {
+          console.error('Failed to fetch product images:', e)
+          allImages = []
+        }
 
         // Obtener variantes para todos los productos (para tallas)
-        allVariants = await db
-          .select()
-          .from(productVariants)
-          .where(inArray(productVariants.productId, productIds))
+        try {
+          allVariants = await db
+            .select()
+            .from(productVariants)
+            .where(inArray(productVariants.productId, productIds))
+        } catch (e) {
+          console.error('Failed to fetch product variants:', e)
+          allVariants = []
+        }
       }
 
       // Formatear productos
