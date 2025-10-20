@@ -18,6 +18,25 @@ interface CreateColorInput {
   displayOrder?: number
 }
 
+interface CreateProductInput {
+  name: string
+  description?: string
+  shortDescription?: string
+  price: number
+  compareAtPrice?: number
+  categoryId?: string
+  sku?: string
+  weight?: number
+  tags?: string[]
+  metaTitle?: string
+  metaDescription?: string
+  isFeatured?: boolean
+  isActive?: boolean
+  images?: string[]
+  sizes?: string[]
+  colors?: string[]
+}
+
 interface UseCategoriesReturn {
   categories: Category[]
   loading: boolean
@@ -40,6 +59,14 @@ interface UseColorsReturn {
   error: string | null
   fetchColors: () => Promise<void>
   createColor: (data: CreateColorInput) => Promise<Color | null>
+}
+
+interface UseCreateProductReturn {
+  loading: boolean
+  error: string | null
+  success: boolean
+  createProduct: (data: CreateProductInput) => Promise<any | null>
+  reset: () => void
 }
 
 export const useCategories = (): UseCategoriesReturn => {
@@ -228,5 +255,58 @@ export const useColors = (): UseColorsReturn => {
     error,
     fetchColors,
     createColor,
+  }
+}
+
+export const useCreateProduct = (): UseCreateProductReturn => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const createProduct = async (data: CreateProductInput) => {
+    setLoading(true)
+    setError(null)
+    setSuccess(false)
+
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        credentials: 'include' // Include cookies for authentication
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al crear el producto')
+      }
+
+      setSuccess(true)
+      return result.data
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
+      setError(errorMessage)
+      console.error('Error creating product:', err)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const reset = () => {
+    setError(null)
+    setSuccess(false)
+    setLoading(false)
+  }
+
+  return {
+    loading,
+    error,
+    success,
+    createProduct,
+    reset,
   }
 }

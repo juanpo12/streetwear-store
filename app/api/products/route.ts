@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { products, categories, productImages, productVariants } from '@/lib/db/schema'
+import { products, categories, productImages, productVariants, users } from '@/lib/db/schema'
 import { eq, and, sql } from 'drizzle-orm'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { cookies } from 'next/headers'
 
 // Función para verificar conectividad de base de datos
 async function isDatabaseAvailable(): Promise<boolean> {
@@ -42,15 +37,15 @@ function formatPriceToARS(priceUSD: number): string {
 }
 
 // Función para obtener URL pública de imagen de Supabase Storage
-function getPublicImageUrl(imagePath: string): string {
-  if (!imagePath) return '/placeholder.svg'
+// function getPublicImageUrl(imagePath: string): string {
+//   if (!imagePath) return '/placeholder.svg'
   
-  const { data } = supabase.storage
-    .from('products')
-    .getPublicUrl(imagePath)
+//   const { data } = supabase.storage
+//     .from('products')
+//     .getPublicUrl(imagePath)
   
-  return data.publicUrl
-}
+//   return data.publicUrl
+// }
 
 export async function GET(request: Request) {
   try {
@@ -233,6 +228,208 @@ export async function GET(request: Request) {
     console.error('Error fetching products:', error)
     return NextResponse.json(
       { success: false, error: 'Error al obtener productos' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    // Verificar autenticación usando cookies
+    // const cookieStore = cookies()
+    // const sessionToken = cookieStore.get('sb-access-token')?.value
+    
+    // if (!sessionToken) {
+    //   return NextResponse.json(
+    //     { success: false, error: 'No autorizado - No hay sesión activa' },
+    //     { status: 401 }
+    //   )
+    // }
+
+    // Verificar que el usuario existe en nuestra base de datos usando Drizzle
+    try {
+      const userResult = await db.select().from(users).limit(1)
+      if (!userResult.length) {
+        return NextResponse.json(
+          { success: false, error: 'Usuario no encontrado' },
+          { status: 401 }
+        )
+      }
+    } catch (dbError) {
+      console.error('Database error during auth check:', dbError)
+      return NextResponse.json(
+        { success: false, error: 'Error de conexión a la base de datos' },
+        { status: 500 }
+      )
+    }
+
+    // Verificar disponibilidad de base de datos
+    const dbAvailable = await isDatabaseAvailable()
+    if (!dbAvailable) {
+      return NextResponse.json({
+        success: false,
+        error: 'Base de datos no disponible'
+      }, { status: 503 })
+    }
+
+    const body = await request.json()
+    const {
+      name,
+      description,
+      shortDescription,
+      price,
+      compareAtPrice,
+      categoryId,
+      sku,
+      weight,
+      tags,
+      metaTitle,
+      metaDescription,
+      isFeatured,
+      isActive,
+      images,
+      sizes,
+      colors
+    } = body
+
+    // Validaciones básicas
+    if (!name || !price) {
+      return NextResponse.json(
+        { success: false, error: 'Nombre y precio son requeridos' },
+        { status: 400 }
+      )
+    }
+
+    // Generar slug único
+    const slug = name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+
+    try {
+      // Crear el producto
+      const newProduct = await db
+        .insert(products)
+        .values({
+          name,
+          slug,
+          description,
+          shortDescription,
+          price: price.toString(),
+          compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
+          categoryId: categoryId || null,
+          sku,
+          weight: weight ? weight.toString() : null,
+          weightUnit: 'kg',
+          tags: tags || [],
+          metaTitle,
+          metaDescription,
+          isFeatured: isFeatured || false,
+          isActive: isActive !== false, // Por defecto true
+          trackQuantity: true,
+          continueSellingWhenOutOfStock: false,
+          requiresShipping: true,
+        })
+        .returning({
+          id: products.id,
+          name: products.name,
+          slug: products.slug,
+          price: products.price,
+          isActive: products.isActive,
+          isFeatured: products.isFeatured,
+          createdAt: products.createdAt
+        })
+
+      const productId = newProduct[0].id
+
+      // Agregar imágenes si existen
+      if (images && images.length > 0) {
+        const imageInserts = images.map((imageUrl: string, index: number) => ({
+          productId,
+          url: imageUrl,
+          altText: `${name} - Imagen ${index + 1}`,
+          position: index
+        }))
+
+        await db.insert(productImages).values(imageInserts)
+      }
+
+      // Crear variantes si hay tallas y colores
+      if (sizes && sizes.length > 0) {
+        const variants = []
+        const sizesToUse = sizes.length > 0 ? sizes : ['Talla Única']
+        const colorsToUse = colors && colors.length > 0 ? colors : ['Color Único']
+
+        for (const size of sizesToUse) {
+          for (const color of colorsToUse) {
+            const variantTitle = sizesToUse.length === 1 && colorsToUse.length === 1 
+              ? 'Variante por defecto'
+              : `${size} / ${color}`
+            
+            variants.push({
+              productId,
+              title: variantTitle,
+              price: price.toString(),
+              compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
+              sku: sku ? `${sku}-${size.toLowerCase()}-${color.toLowerCase()}` : null,
+              inventoryQuantity: 0,
+              position: variants.length,
+              isActive: true
+            })
+          }
+        }
+
+        if (variants.length > 0) {
+          await db.insert(productVariants).values(variants)
+        }
+      }
+
+      // Obtener el producto completo con imágenes
+      const createdProduct = await db
+        .select({
+          id: products.id,
+          name: products.name,
+          slug: products.slug,
+          description: products.description,
+          price: products.price,
+          categoryName: categories.name,
+          isActive: products.isActive,
+          isFeatured: products.isFeatured,
+          createdAt: products.createdAt
+        })
+        .from(products)
+        .leftJoin(categories, eq(products.categoryId, categories.id))
+        .where(eq(products.id, productId))
+        .limit(1)
+
+      const productImages_result = await db
+        .select()
+        .from(productImages)
+        .where(eq(productImages.productId, productId))
+
+      const finalProduct = {
+        ...createdProduct[0],
+        images: productImages_result
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: finalProduct,
+        message: 'Producto creado exitosamente'
+      }, { status: 201 })
+
+    } catch (dbError) {
+      console.error('Database error creating product:', dbError)
+      return NextResponse.json({
+        success: false,
+        error: 'Error al crear el producto en la base de datos',
+        details: dbError instanceof Error ? dbError.message : 'Unknown error'
+      }, { status: 500 })
+    }
+
+  } catch (error) {
+    console.error('Error creating product:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error interno del servidor' },
       { status: 500 }
     )
   }

@@ -37,7 +37,7 @@ export const useImageUpload = (): UseImageUploadReturn => {
         formData.append('files', image.file)
       })
 
-      const response = await fetch('/api/upload-test', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       })

@@ -12,34 +12,74 @@ import { CreatableSelect } from "@/components/ui/creatable-select"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
-import { useCategories, useSizes, useColors } from "@/hooks/use-products"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useCategories, useSizes, useColors, useCreateProduct } from "@/hooks/use-products"
 
 export default function NewProductPage() {
+  const router = useRouter()
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    shortDescription: "",
     price: "",
+    compareAtPrice: "",
     category: "",
-    stock: "",
+    sku: "",
+    weight: "",
+    metaTitle: "",
+    metaDescription: "",
+    isFeatured: false,
     sizes: [] as string[],
     colors: [] as string[],
   })
 
-  const [productImages, setProductImages] = useState<any[]>([])
+  const [productImages, setProductImages] = useState<string[]>([])
 
   // Usar los hooks personalizados
   const { categories, loading: categoriesLoading, error: categoriesError, createCategory } = useCategories()
   const { sizes, loading: sizesLoading, error: sizesError, createSize } = useSizes()
   const { colors, loading: colorsLoading, error: colorsError, createColor } = useColors()
+  const { loading: createLoading, error: createError, success, createProduct, reset } = useCreateProduct()
 
   // Loading general
-  const loading = categoriesLoading || sizesLoading || colorsLoading
+  const loading = categoriesLoading || sizesLoading || colorsLoading || createLoading
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Efecto para redirigir después de crear el producto exitosamente
+  useEffect(() => {
+    if (success) {
+      setTimeout(() => {
+        router.push('/admin/products')
+      }, 2000) // Esperar 2 segundos para mostrar el mensaje de éxito
+    }
+  }, [success, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log("Product data:", formData)
+    
+    // Validación básica
+    if (!formData.name || !formData.price || !formData.category) {
+      alert("Por favor completa los campos obligatorios: nombre, precio y categoría")
+      return
+    }
+
+    await createProduct({
+      name: formData.name,
+      description: formData.description,
+      shortDescription: formData.shortDescription,
+      price: parseFloat(formData.price),
+      compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : undefined,
+      category: formData.category,
+      sku: formData.sku,
+      weight: formData.weight ? parseFloat(formData.weight) : undefined,
+      metaTitle: formData.metaTitle,
+      metaDescription: formData.metaDescription,
+      isFeatured: formData.isFeatured,
+      images: productImages,
+      sizes: formData.sizes,
+      colors: formData.colors,
+    })
   }
 
   return (
@@ -101,13 +141,12 @@ export default function NewProductPage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="stock">Stock Quantity</Label>
+                      <Label htmlFor="sku">SKU</Label>
                       <Input
-                        id="stock"
-                        type="number"
-                        placeholder="15"
-                        value={formData.stock}
-                        onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                        id="sku"
+                        placeholder="e.g., HOODIE-001"
+                        value={formData.sku}
+                        onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                       />
                     </div>
                   </div>
@@ -193,11 +232,18 @@ export default function NewProductPage() {
                   <CardTitle>ACTIONS</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button type="submit" className="w-full">
-                    CREATE PRODUCT
-                  </Button>
-                  <Button type="button" variant="outline" className="w-full bg-transparent">
-                    SAVE AS DRAFT
+                  {createError && (
+                    <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
+                      Error: {createError}
+                    </div>
+                  )}
+                  {success && (
+                    <div className="text-green-500 text-sm p-2 bg-green-50 rounded">
+                      ¡Producto creado exitosamente!
+                    </div>
+                  )}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {createLoading ? "CREANDO..." : "CREATE PRODUCT"}
                   </Button>
                   <Button type="button" variant="ghost" className="w-full" asChild>
                     <Link href="/admin/products">CANCEL</Link>
