@@ -7,7 +7,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, ShoppingBag, Heart, Share2, Facebook, Twitter, MessageCircle, Copy, X } from "lucide-react"
+import { ArrowLeft, ShoppingBag, Heart, Share2, Facebook, Twitter, MessageCircle, Copy, X, Star, Truck, Shield, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
 import { useFavorites } from "@/components/favorites-provider"
 
@@ -40,6 +40,7 @@ export default function ProductPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showShareOptions, setShowShareOptions] = useState(false)
+  const [isAddingToCart, setIsAddingToCart] = useState(false)
   const shareMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -70,7 +71,6 @@ export default function ProductPage() {
     }
   }, [params.id])
 
-  // Close share menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) {
@@ -90,15 +90,19 @@ export default function ProductPage() {
   const handleAddToCart = () => {
     if (!product) return
     
+    setIsAddingToCart(true)
     addItem({
       id: product.id,
       name: product.name,
       price: product.priceNumeric,
       image: product.image,
       size: selectedSize,
-      // color: selectedColor, // removed to match CartItem type
     })
-    openCart()
+    
+    setTimeout(() => {
+      setIsAddingToCart(false)
+      openCart()
+    }, 600)
   }
 
   const handleToggleFavorite = () => {
@@ -127,7 +131,6 @@ export default function ProductPage() {
   const handleShare = async () => {
     if (!product) return
 
-    // Check if Web Share API is supported
     if (navigator.share) {
       try {
         await navigator.share({
@@ -136,11 +139,9 @@ export default function ProductPage() {
           url: window.location.href,
         })
       } catch (err) {
-        // User cancelled the share or error occurred
         console.log('Share cancelled or failed:', err)
       }
     } else {
-      // Fallback: show manual share options
       setShowShareOptions(!showShareOptions)
     }
   }
@@ -176,19 +177,36 @@ export default function ProductPage() {
     }
   }
 
+  const nextImage = () => {
+    if (!product?.images) return
+    setSelectedImageIndex((prev) => (prev + 1) % product.images.length)
+  }
+
+  const prevImage = () => {
+    if (!product?.images) return
+    setSelectedImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length)
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
           <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded w-32 mb-8"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="aspect-square bg-muted rounded-lg"></div>
+            <div className="h-10 bg-muted/50 rounded-full w-24 mb-8"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-4">
-                <div className="h-8 bg-muted rounded w-3/4"></div>
-                <div className="h-4 bg-muted rounded w-1/2"></div>
-                <div className="h-6 bg-muted rounded w-1/4"></div>
-                <div className="h-20 bg-muted rounded"></div>
+                <div className="aspect-square bg-muted/50 rounded-3xl"></div>
+                <div className="grid grid-cols-5 gap-3">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="aspect-square bg-muted/50 rounded-2xl"></div>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="h-10 bg-muted/50 rounded-xl w-3/4"></div>
+                <div className="h-6 bg-muted/50 rounded-lg w-1/2"></div>
+                <div className="h-8 bg-muted/50 rounded-lg w-1/3"></div>
+                <div className="h-32 bg-muted/50 rounded-xl"></div>
               </div>
             </div>
           </div>
@@ -199,20 +217,23 @@ export default function ProductPage() {
 
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
           <Button 
             variant="ghost" 
             onClick={() => router.back()}
-            className="mb-8"
+            className="mb-8 rounded-full hover:bg-muted/50"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
           </Button>
-          <div className="text-center py-16">
-            <h1 className="text-2xl font-bold mb-4">Producto no encontrado</h1>
-            <p className="text-muted-foreground mb-8">{error}</p>
-            <Button onClick={() => router.push("/shop")}>
+          <div className="text-center py-24">
+            <div className="inline-block p-8 rounded-3xl bg-muted/30 mb-6">
+              <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Producto no encontrado</h1>
+            <p className="text-muted-foreground mb-8 text-lg">{error}</p>
+            <Button onClick={() => router.push("/shop")} size="lg" className="rounded-full">
               Ir a la tienda
             </Button>
           </div>
@@ -222,23 +243,23 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Back Button */}
         <Button 
           variant="ghost" 
           onClick={() => router.back()}
-          className="mb-8"
+          className="mb-8 rounded-full hover:bg-muted/50 transition-all"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver
         </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
           {/* Product Images Gallery */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="aspect-square overflow-hidden rounded-lg bg-muted">
+            {/* Main Image with Navigation */}
+            <div className="relative group aspect-square overflow-hidden rounded-3xl bg-muted/30 shadow-lg">
               <Image
                 src={product.images && product.images.length > 0 
                   ? product.images[selectedImageIndex]?.url 
@@ -246,24 +267,63 @@ export default function ProductPage() {
                 alt={product.images && product.images.length > 0 
                   ? product.images[selectedImageIndex]?.altText 
                   : product.name}
-                width={600}
-                height={600}
-                className="h-full w-full object-cover"
+                width={700}
+                height={700}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 priority
               />
+              
+              {/* Image Navigation Arrows */}
+              {product.images && product.images.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+
+              {/* Badges Overlay */}
+              <div className="absolute top-4 left-4 flex flex-col gap-2">
+                {product.featured && (
+                  <Badge className="bg-primary text-primary-foreground shadow-lg backdrop-blur-sm rounded-full px-4 py-1.5">
+                    ⭐ DESTACADO
+                  </Badge>
+                )}
+                {!product.inStock && (
+                  <Badge variant="destructive" className="shadow-lg backdrop-blur-sm rounded-full px-4 py-1.5">
+                    AGOTADO
+                  </Badge>
+                )}
+              </div>
+
+              {/* Image Counter */}
+              {product.images && product.images.length > 1 && (
+                <div className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                  {selectedImageIndex + 1} / {product.images.length}
+                </div>
+              )}
             </div>
             
             {/* Thumbnail Images */}
             {product.images && product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-3">
                 {product.images.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`aspect-square overflow-hidden rounded-lg bg-muted border-2 transition-colors ${
+                    className={`aspect-square overflow-hidden rounded-2xl bg-muted/30 border-3 transition-all duration-300 hover:scale-105 ${
                       selectedImageIndex === index 
-                        ? 'border-primary' 
-                        : 'border-transparent hover:border-muted-foreground'
+                        ? 'border-primary shadow-lg ring-2 ring-primary ring-offset-2' 
+                        : 'border-transparent hover:border-muted-foreground/50'
                     }`}
                   >
                     <Image
@@ -280,58 +340,73 @@ export default function ProductPage() {
           </div>
 
           {/* Product Details */}
-          <div className="space-y-6">
-            {/* Category & Status */}
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">
+          <div className="space-y-6 lg:pt-2">
+            {/* Category Badge */}
+            <div>
+              <Badge variant="secondary" className="text-sm px-4 py-1.5 rounded-full">
                 {product.category}
               </Badge>
-              {product.featured && (
-                <Badge variant="default" className="text-xs">
-                  DESTACADO
-                </Badge>
-              )}
-              {!product.inStock && (
-                <Badge variant="destructive" className="text-xs">
-                  AGOTADO
-                </Badge>
-              )}
             </div>
 
             {/* Product Name */}
-            <h1 className="text-3xl font-bold tracking-tight">{product.name}</h1>
+            <div>
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                {product.name}
+              </h1>
+              
+              {/* Rating (mock data) */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <span className="text-sm text-muted-foreground">(124 reseñas)</span>
+              </div>
+            </div>
 
-            {/* Price */}
-            <div className="text-2xl font-bold">{product.price}</div>
-
-            {/* Stock Information */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Stock disponible:</span>
-              <span className={`text-sm font-medium ${
-                product.stock > 10 ? 'text-green-600' : 
-                product.stock > 0 ? 'text-yellow-600' : 'text-red-600'
-              }`}>
-                {product.stock > 0 ? `${product.stock} unidades` : 'Agotado'}
-              </span>
+            {/* Price & Stock */}
+            <div className="flex items-center justify-between p-6 rounded-2xl bg-muted/30 border-2 border-muted">
+              <div>
+                <div className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {product.price}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  Impuestos incluidos
+                </div>
+              </div>
+              <div className="text-right">
+                <div className={`text-sm font-semibold px-4 py-2 rounded-full ${
+                  product.stock > 10 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
+                  product.stock > 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 
+                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                }`}>
+                  {product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}
+                </div>
+              </div>
             </div>
 
             {/* Description */}
-            <div className="prose prose-sm max-w-none">
-              <p className="text-muted-foreground">{product.description}</p>
+            <div className="p-6 rounded-2xl bg-muted/20">
+              <p className="text-muted-foreground leading-relaxed">{product.description}</p>
             </div>
 
             {/* Size Selection */}
             {product.sizes.length > 0 && (
               <div className="space-y-3">
-                <h3 className="font-medium">Talla</h3>
-                <div className="flex flex-wrap gap-2">
+                <h3 className="font-semibold text-lg">Selecciona tu talla</h3>
+                <div className="flex flex-wrap gap-3">
                   {product.sizes.map((size) => (
                     <Button
                       key={size}
                       variant={selectedSize === size ? "default" : "outline"}
-                      size="sm"
+                      size="lg"
                       onClick={() => setSelectedSize(size)}
-                      className="min-w-[3rem]"
+                      className={`min-w-[4rem] rounded-xl font-medium transition-all ${
+                        selectedSize === size 
+                          ? 'shadow-lg scale-105' 
+                          : 'hover:scale-105 hover:border-primary/50'
+                      }`}
                     >
                       {size}
                     </Button>
@@ -343,14 +418,19 @@ export default function ProductPage() {
             {/* Color Selection */}
             {product.colors.length > 0 && (
               <div className="space-y-3">
-                <h3 className="font-medium">Color</h3>
-                <div className="flex flex-wrap gap-2">
+                <h3 className="font-semibold text-lg">Elige un color</h3>
+                <div className="flex flex-wrap gap-3">
                   {product.colors.map((color) => (
                     <Button
                       key={color}
                       variant={selectedColor === color ? "default" : "outline"}
-                      size="sm"
+                      size="lg"
                       onClick={() => setSelectedColor(color)}
+                      className={`rounded-xl font-medium transition-all ${
+                        selectedColor === color 
+                          ? 'shadow-lg scale-105' 
+                          : 'hover:scale-105 hover:border-primary/50'
+                      }`}
                     >
                       {color}
                     </Button>
@@ -360,54 +440,55 @@ export default function ProductPage() {
             )}
 
             {/* Action Buttons */}
-            <div className="space-y-4">
+            <div className="space-y-3 pt-4">
               <Button 
                 size="lg" 
-                className="w-full bg-primary hover:bg-accent gap-2"
+                className={`w-full bg-primary hover:bg-accent gap-2 h-14 rounded-xl text-base font-semibold shadow-lg transition-all ${
+                  isAddingToCart ? 'scale-95' : 'hover:scale-105'
+                }`}
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
+                disabled={!product.inStock || isAddingToCart}
               >
                 <ShoppingBag className="h-5 w-5" />
-                {product.inStock ? "AGREGAR AL CARRITO" : "AGOTADO"}
+                {isAddingToCart ? "AGREGANDO..." : product.inStock ? "AGREGAR AL CARRITO" : "AGOTADO"}
               </Button>
 
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="flex-1"
+                  className="h-12 rounded-xl font-medium hover:scale-105 transition-all"
                   onClick={handleToggleFavorite}
                 >
                   <Heart 
-                    className={`h-4 w-4 mr-2 ${
+                    className={`h-5 w-5 mr-2 transition-all ${
                       isFavorite(parseInt(product.id)) 
-                        ? "fill-red-500 text-red-500" 
+                        ? "fill-red-500 text-red-500 scale-110" 
                         : ""
                     }`} 
                   />
-                  {isFavorite(parseInt(product.id)) ? "En Favoritos" : "Favoritos"}
+                  Favoritos
                 </Button>
-                <div className="relative flex-1" ref={shareMenuRef}>
+                <div className="relative" ref={shareMenuRef}>
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="w-full"
+                    className="w-full h-12 rounded-xl font-medium hover:scale-105 transition-all"
                     onClick={handleShare}
                   >
-                    <Share2 className="h-4 w-4 mr-2" />
+                    <Share2 className="h-5 w-5 mr-2" />
                     Compartir
                   </Button>
                   
-                  {/* Share Options Dropdown */}
                   {showShareOptions && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-lg z-50 p-2">
-                      <div className="flex justify-between items-center mb-2 pb-2 border-b">
-                        <span className="text-sm font-medium">Compartir producto</span>
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-background border-2 rounded-2xl shadow-2xl z-50 p-3 backdrop-blur-xl">
+                      <div className="flex justify-between items-center mb-3 pb-3 border-b">
+                        <span className="font-semibold">Compartir producto</span>
                         <Button 
                           variant="ghost" 
                           size="sm" 
                           onClick={() => setShowShareOptions(false)}
-                          className="h-6 w-6 p-0"
+                          className="h-8 w-8 p-0 rounded-full hover:bg-muted"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -416,37 +497,37 @@ export default function ProductPage() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="w-full justify-start"
+                          className="w-full justify-start rounded-xl hover:bg-muted transition-all"
                           onClick={shareToFacebook}
                         >
-                          <Facebook className="h-4 w-4 mr-2 text-blue-600" />
+                          <Facebook className="h-5 w-5 mr-3 text-blue-600" />
                           Facebook
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="w-full justify-start"
+                          className="w-full justify-start rounded-xl hover:bg-muted transition-all"
                           onClick={shareToTwitter}
                         >
-                          <Twitter className="h-4 w-4 mr-2 text-blue-400" />
+                          <Twitter className="h-5 w-5 mr-3 text-blue-400" />
                           Twitter
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="w-full justify-start"
+                          className="w-full justify-start rounded-xl hover:bg-muted transition-all"
                           onClick={shareToWhatsApp}
                         >
-                          <MessageCircle className="h-4 w-4 mr-2 text-green-600" />
+                          <MessageCircle className="h-5 w-5 mr-3 text-green-600" />
                           WhatsApp
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="w-full justify-start"
+                          className="w-full justify-start rounded-xl hover:bg-muted transition-all"
                           onClick={copyToClipboard}
                         >
-                          <Copy className="h-4 w-4 mr-2" />
+                          <Copy className="h-5 w-5 mr-3" />
                           Copiar enlace
                         </Button>
                       </div>
@@ -456,21 +537,21 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* Product Info */}
-            <Card className="p-4">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Categoría:</span>
-                  <span>{product.category}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Disponibilidad:</span>
-                  <span className={product.inStock ? "text-green-600" : "text-red-600"}>
-                    {product.inStock ? "En stock" : "Agotado"}
-                  </span>
-                </div>
-              </div>
-            </Card>
+            {/* Features Cards */}
+            <div className="grid grid-cols-3 gap-3 pt-4">
+              <Card className="p-4 text-center rounded-2xl border-2 hover:shadow-lg transition-all hover:scale-105">
+                <Truck className="h-6 w-6 mx-auto mb-2 text-primary" />
+                <div className="text-xs font-medium">Envío gratis</div>
+              </Card>
+              <Card className="p-4 text-center rounded-2xl border-2 hover:shadow-lg transition-all hover:scale-105">
+                <Shield className="h-6 w-6 mx-auto mb-2 text-primary" />
+                <div className="text-xs font-medium">Compra segura</div>
+              </Card>
+              <Card className="p-4 text-center rounded-2xl border-2 hover:shadow-lg transition-all hover:scale-105">
+                <RefreshCw className="h-6 w-6 mx-auto mb-2 text-primary" />
+                <div className="text-xs font-medium">10 días devolución</div>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
