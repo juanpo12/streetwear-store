@@ -5,7 +5,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ShoppingBag, Heart } from "lucide-react"
+import { ShoppingBag, Heart, Eye, Star, TrendingUp } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { useFavorites } from "@/components/favorites-provider"
 
 interface ProductCardProps {
@@ -15,12 +16,15 @@ interface ProductCardProps {
     price: number
     image: string
     category: string
+    featured?: boolean
+    inStock?: boolean
   }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites()
   const isProductFavorite = isFavorite(product.id)
+  const [imageLoaded, setImageLoaded] = useState(false)
 
   const handleBuyClick = (e: React.MouseEvent) => {
     // Permitir que el Link padre maneje la navegación
@@ -39,44 +43,131 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product.id}`}>
-      <Card className="group overflow-hidden border-0 shadow-none cursor-pointer transition-all hover:shadow-lg">
-        <div className="aspect-square overflow-hidden bg-muted relative">
+      <Card className="group overflow-hidden border-2 border-transparent hover:border-primary/20 shadow-none cursor-pointer transition-all duration-300 hover:shadow-2xl rounded-3xl bg-card">
+        {/* Image Container */}
+        <div className="aspect-square overflow-hidden bg-gradient-to-br from-muted/30 to-muted/60 relative">
           <Image
             src={product.image || "/placeholder.svg"}
             alt={product.name}
-            width={400}
-            height={400}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            width={500}
+            height={500}
+            className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:rotate-2 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            onLoad={() => setImageLoaded(true)}
           />
-          {/* Favorites Button */}
-          <Button
-            size="icon"
-            variant="ghost"
-            className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background/90 backdrop-blur-sm"
-            onClick={handleFavoriteClick}
-          >
-            <Heart 
-              className={`h-4 w-4 transition-colors ${
-                isProductFavorite 
-                  ? "fill-red-500 text-red-500" 
-                  : "text-muted-foreground hover:text-red-500"
-              }`} 
-            />
-          </Button>
-        </div>
-        <div className="p-4 space-y-2">
-          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{product.category}</div>
-          <h3 className="font-semibold text-lg tracking-tight">{product.name}</h3>
-          <div className="flex items-center justify-between">
-            <span className="text-xl font-bold">${product.price}</span>
-            <Button 
-              size="sm" 
-              className="bg-primary hover:bg-accent gap-2" 
+          
+          {/* Loading placeholder */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 animate-pulse bg-muted" />
+          )}
+
+          {/* Overlay gradient on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* Top Badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
+            {product.featured && (
+              <Badge className="bg-primary/90 backdrop-blur-sm text-primary-foreground border-0 shadow-lg rounded-full px-3 py-1">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                Destacado
+              </Badge>
+            )}
+            {product.inStock === false && (
+              <Badge variant="destructive" className="backdrop-blur-sm border-0 shadow-lg rounded-full px-3 py-1">
+                Agotado
+              </Badge>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2">
+            {/* Favorites Button */}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-10 w-10 rounded-full bg-background/90 hover:bg-background backdrop-blur-sm shadow-lg transition-all hover:scale-110 border-2 border-transparent hover:border-primary/20"
+              onClick={handleFavoriteClick}
+            >
+              <Heart 
+                className={`h-4 w-4 transition-all ${
+                  isProductFavorite 
+                    ? "fill-red-500 text-red-500 scale-110" 
+                    : "text-muted-foreground"
+                }`} 
+              />
+            </Button>
+
+            {/* Quick View Button */}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-10 w-10 rounded-full bg-background/90 hover:bg-background backdrop-blur-sm shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110 border-2 border-transparent hover:border-primary/20"
               onClick={handleBuyClick}
             >
-              <ShoppingBag className="h-4 w-4" />
-              BUY
+              <Eye className="h-4 w-4 text-muted-foreground" />
             </Button>
+          </div>
+
+          {/* Bottom Quick Actions */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+            <Button 
+              size="lg" 
+              className="w-full bg-background/95 hover:bg-background backdrop-blur-sm text-foreground hover:text-primary shadow-lg rounded-xl font-semibold border-2 border-transparent hover:border-primary/20 transition-all" 
+              onClick={handleBuyClick}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Ver Detalles
+            </Button>
+          </div>
+        </div>
+
+        {/* Product Info */}
+        <div className="p-5 space-y-3">
+          {/* Category */}
+          <div className="flex items-center justify-between">
+            <Badge variant="secondary" className="text-xs font-medium uppercase tracking-wider rounded-full px-3 py-1">
+              {product.category}
+            </Badge>
+            {/* Rating (mock) */}
+            <div className="flex items-center gap-1">
+              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+              <span className="text-xs font-medium text-muted-foreground">4.8</span>
+            </div>
+          </div>
+
+          {/* Product Name */}
+          <h3 className="font-bold text-lg tracking-tight line-clamp-2 group-hover:text-primary transition-colors min-h-[3.5rem]">
+            {product.name}
+          </h3>
+
+          {/* Price and Buy Button */}
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                ${product.price}
+              </span>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Envío incluido
+              </div>
+            </div>
+            <Button 
+              size="icon"
+              className="h-12 w-12 rounded-full bg-primary hover:bg-accent shadow-lg hover:shadow-xl transition-all hover:scale-110" 
+              onClick={handleBuyClick}
+            >
+              <ShoppingBag className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Stock indicator */}
+          <div className="flex items-center gap-2 pt-1">
+            <div className={`h-2 w-2 rounded-full ${
+              product.inStock === false ? 'bg-red-500' : 'bg-green-500'
+            } animate-pulse`} />
+            <span className="text-xs text-muted-foreground">
+              {product.inStock === false ? 'Sin stock' : 'Disponible'}
+            </span>
           </div>
         </div>
       </Card>

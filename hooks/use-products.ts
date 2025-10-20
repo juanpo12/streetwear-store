@@ -310,3 +310,60 @@ export const useCreateProduct = (): UseCreateProductReturn => {
     reset,
   }
 }
+
+// Productos: listado
+export interface UseProductsOptions {
+  category?: string
+  featured?: boolean
+  limit?: number
+  query?: string
+}
+
+export interface UseProductsReturn {
+  products: any[]
+  loading: boolean
+  error: string | null
+  fetchProducts: (options?: UseProductsOptions) => Promise<void>
+}
+
+export const useProducts = (opts?: UseProductsOptions): UseProductsReturn => {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const buildUrl = (options?: UseProductsOptions) => {
+    const params = new URLSearchParams()
+    if (options?.category) params.set('category', options.category)
+    if (options?.featured) params.set('featured', 'true')
+    if (options?.limit) params.set('limit', String(options.limit))
+    if (options?.query) params.set('q', options.query)
+    const qs = params.toString()
+    return `/api/products${qs ? `?${qs}` : ''}`
+  }
+
+  const fetchProducts = async (options?: UseProductsOptions) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const url = buildUrl(options ?? opts)
+      const res = await fetch(url)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to fetch products')
+      const items = Array.isArray(json.data) ? json.data : []
+      setProducts(items)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error fetching products'
+      setError(message)
+      console.error('Error fetching products:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchProducts(opts)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts?.category, opts?.featured, opts?.limit, opts?.query])
+
+  return { products, loading, error, fetchProducts }
+}

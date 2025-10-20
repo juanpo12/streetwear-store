@@ -1,87 +1,52 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { ProductCard } from "@/components/product-card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { useProducts } from "@/hooks/use-products"
 
-interface Product {
-  id: number
-  name: string
-  price: number
-  image: string
-  category: string
-  description: string
-  sizes: string[]
-  colors: string[]
-  inStock: boolean
-  featured: boolean
-}
+const ITEMS_PER_PAGE = 12
 
-const categories = ["ALL", "Hoodies & Sweatshirts", "T-Shirts", "Pants", "Jackets", "Accessories"]
-const PRODUCTS_PER_PAGE = 8
+const ShopPage: React.FC = () => {
+  const { products, loading, error, fetchProducts } = useProducts()
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL")
+  const [currentPage, setCurrentPage] = useState<number>(1)
 
-export default function ShopPage() {
-  const [selectedCategory, setSelectedCategory] = useState("ALL")
-  const [allProducts, setAllProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
+  const allProducts = products || []
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch('/api/products')
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch products')
-        }
-        
-        const data = await response.json()
-        setAllProducts(data.data || [])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const categories = useMemo(() => {
+    const cats = new Set<string>(["ALL"])
+    for (const p of allProducts) if (p.category) cats.add(p.category)
+    return Array.from(cats)
+  }, [allProducts])
 
-    fetchProducts()
-  }, [])
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === "ALL") return allProducts
+    return allProducts.filter((p: any) => p.category === selectedCategory)
+  }, [selectedCategory, allProducts])
 
-  const filteredProducts =
-    selectedCategory === "ALL" ? allProducts : allProducts.filter((product) => product.category === selectedCategory)
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredProducts.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredProducts, currentPage])
 
-  // Calcular paginación
-  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE)
-  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE
-  const endIndex = startIndex + PRODUCTS_PER_PAGE
-  const currentProducts = filteredProducts.slice(startIndex, endIndex)
-
-  // Resetear página cuando cambia la categoría
   useEffect(() => {
     setCurrentPage(1)
   }, [selectedCategory])
 
   if (loading) {
     return (
-      <div className="min-h-screen">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center mb-12">
-            <h1 className="text-streetwear-lg mb-4">ALL PRODUCTS</h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Discover our complete collection of premium streetwear pieces.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-gray-200 aspect-square rounded-lg mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
+      <div className="container mx-auto p-4">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+            <Skeleton key={i} className="h-72 w-full" />
+          ))}
         </div>
       </div>
     )
@@ -89,99 +54,62 @@ export default function ShopPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-streetwear-lg mb-4">ALL PRODUCTS</h1>
-            <p className="text-red-500">Error loading products: {error}</p>
-            <Button 
-              onClick={() => window.location.reload()} 
-              className="mt-4"
-            >
-              Retry
-            </Button>
-          </div>
+      <div className="container mx-auto p-4">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => fetchProducts()}>Reintentar</Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-streetwear-lg mb-4">ALL PRODUCTS</h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Discover our complete collection of premium streetwear pieces.
-          </p>
-        </div>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <select
+          className="border rounded p-2"
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+        >
+          {categories.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
 
-        {/* Filters */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={category === selectedCategory ? "default" : "outline"}
-              className="text-sm font-medium"
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          >
+            {"<"}
+          </Button>
+          <span>
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          >
+            {">"}
+          </Button>
+        </div>
+      </div>
+
+      {paginatedProducts.length === 0 ? (
+        <p className="text-center text-muted-foreground">No hay productos para mostrar.</p>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {paginatedProducts.map((product: any) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
-
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {filteredProducts.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-muted-foreground">No products found in this category.</p>
-            </div>
-          ) : (
-            currentProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))
-          )}
-        </div>
-
-        {/* Pagination */}
-        {filteredProducts.length > 0 && totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-12">
-            {/* Botón anterior */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              ←
-            </Button>
-
-            {/* Botones de páginas */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCurrentPage(page)}
-                className="min-w-[40px]"
-              >
-                {page}
-              </Button>
-            ))}
-
-            {/* Botón siguiente */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              →
-            </Button>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }
+
+export default ShopPage
