@@ -27,3 +27,35 @@ export async function GET() {
     )
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const { name, slug, description, } = await req.json()
+
+    const newCategory = await db
+      .insert(categories)
+      .values({
+        name,
+        slug,
+        description,
+        imageUrl: null,
+        isActive: true,
+      })
+      .returning({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+        description: categories.description,
+        imageUrl: categories.imageUrl,
+        isActive: categories.isActive,
+      })
+
+    return NextResponse.json(newCategory[0])
+  } catch (error) {
+    console.error('Error creating category:', error)
+    return NextResponse.json(
+      { error: 'Failed to create category' },
+      { status: 500 }
+    )
+  }
+}
