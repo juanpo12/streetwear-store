@@ -196,3 +196,172 @@ export async function GET(
     )
   }
 }
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const productId = params.id
+
+    // Validar UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(productId)) {
+      return NextResponse.json({ success: false, error: 'ID de producto inválido' }, { status: 400 })
+    }
+
+    // Verificar disponibilidad de base de datos
+    const dbAvailable = await isDatabaseAvailable()
+    if (!dbAvailable) {
+      return NextResponse.json({ success: false, error: 'Base de datos no disponible' }, { status: 503 })
+    }
+
+    const body = await request.json()
+    const {
+      name,
+      description,
+      shortDescription,
+      price,
+      compareAtPrice,
+      categoryId,
+      stock,
+      weight,
+      tags,
+      metaTitle,
+      metaDescription,
+      isFeatured,
+      isActive,
+      images,
+      sizes,
+      colors,
+    } = body
+
+    // Generador simple de SKU
+    const generateSKU = (productName: string) => {
+      const prefix = productName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6)
+      const timestamp = Date.now().toString().slice(-6)
+      return `${prefix}-${timestamp}`
+    }
+
+    // Obtener producto existente para base de SKU
+    const existingProduct = await db
+      .select({ id: products.id, name: products.name, sku: products.sku, price: products.price })
+      .from(products)
+      .where(eq(products.id, productId))
+      .limit(1)
+
+    if (existingProduct.length === 0) {
+      return NextResponse.json({ success: false, error: 'Producto no encontrado' }, { status: 404 })
+    }
+
+    const baseSKU = existingProduct[0].sku || generateSKU(name || existingProduct[0].name)
+
+    // Preparar slug si cambia el nombre
+    const slug = name
+      ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      : undefined
+
+    // Actualizar el producto (solo campos presentes)
+    const updatedRows = await db
+      .update(products)
+      .set({
+        ...(name !== undefined ? { name, slug } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(shortDescription !== undefined ? { shortDescription } : {}),
+        ...(price !== undefined ? { price: price.toString() } : {}),
+        ...(compareAtPrice !== undefined ? { compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null } : {}),
+        ...(categoryId !== undefined ? { categoryId: categoryId || null } : {}),
+        ...(stock !== undefined ? { stock: stock ?? 0 } : {}),
+        ...(weight !== undefined ? { weight: weight ? weight.toString() : null } : {}),
+        ...(tags !== undefined ? { tags } : {}),
+        ...(metaTitle !== undefined ? { metaTitle } : {}),
+        ...(metaDescription !== undefined ? { metaDescription } : {}),
+        ...(isFeatured !== undefined ? { isFeatured } : {}),
+        ...(isActive !== undefined ? { isActive } : {}),
+      })
+      .where(eq(products.id, productId))
+      .returning({ id: products.id, name: products.name, slug: products.slug, price: products.price })
+
+    const updatedProduct = updatedRows[0]
+
+    // Actualizar imágenes si se envían en el body
+    if (images !== undefined) {
+      // Borrar todas las imágenes actuales y reinsertar
+      await db.delete(productImages).where(eq(productImages.productId, productId))
+
+      if (Array.isArray(images) && images.length > 0) {
+        const imageInserts = images.map((imageUrl: string, index: number) => ({
+          productId,
+          url: imageUrl,
+          altText: `${(updatedProduct?.name || name || 'Producto')} - Imagen ${index + 1}`,
+          position: index + 1,
+        }))
+        await db.insert(productImages).values(imageInserts)
+      }
+    }
+
+    // Actualizar variantes si se envían tallas/colores
+    if (sizes !== undefined || colors !== undefined) {
+      await db.delete(productVariants).where(eq(productVariants.productId, productId))
+
+      const sizesToUse = Array.isArray(sizes) && sizes.length > 0 ? sizes : ['Talla Única']
+      const colorsToUse = Array.isArray(colors) && colors.length > 0 ? colors : ['Color Único']
+
+      const variants: any[] = []
+      for (const size of sizesToUse) {
+        for (const color of colorsToUse) {
+          const variantTitle = sizesToUse.length === 1 && colorsToUse.length === 1
+            ? 'Variante por defecto'
+            : `${size} / ${color}`
+
+          variants.push({
+            productId,
+            title: variantTitle,
+            price: (price !== undefined ? price.toString() : updatedProduct.price),
+            compareAtPrice: compareAtPrice !== undefined ? (compareAtPrice ? compareAtPrice.toString() : null) : null,
+            sku: baseSKU ? `${baseSKU}-${String(size).toLowerCase()}-${String(color).toLowerCase()}` : null,
+            inventoryQuantity: 0,
+            position: variants.length,
+            isActive: true,
+          })
+        }
+      }
+
+      if (variants.length > 0) {
+        await db.insert(productVariants).values(variants)
+      }
+    }
+
+    // Obtener producto final con imágenes
+    const productResult = await db
+      .select({
+        id: products.id,
+        name: products.name,
+        slug: products.slug,
+        description: products.description,
+        price: products.price,
+        categoryName: categories.name,
+        isActive: products.isActive,
+        isFeatured: products.isFeatured,
+        stock: products.stock,
+        createdAt: products.createdAt,
+      })
+      .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
+      .where(eq(products.id, productId))
+      .limit(1)
+
+    const imagesAll = await db
+      .select()
+      .from(productImages)
+      .where(eq(productImages.productId, productId))
+      .orderBy(productImages.position)
+
+    const finalProduct = { ...productResult[0], images: imagesAll }
+
+    return NextResponse.json({ success: true, data: finalProduct, message: 'Producto actualizado exitosamente' }, { status: 200 })
+  } catch (error) {
+    console.error('Error updating product:', error)
+    return NextResponse.json({ success: false, error: 'Error interno del servidor' }, { status: 500 })
+  }
+}

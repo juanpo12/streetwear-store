@@ -13,55 +13,19 @@ import { Plus, Edit, Trash2, Eye, Upload, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useRef } from "react"
+import { useProducts } from "@/hooks/use-products"
 
-// Mock data - replace with real data later
-const products = [
-  {
-    id: "1",
-    name: "OVERSIZED HOODIE",
-    price: 89,
-    image: "/oversized-black-hoodie.jpg",
-    category: "HOODIES",
-    stock: 15,
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "BOXY TEE",
-    price: 45,
-    image: "/boxy-white-t-shirt.jpg",
-    category: "TEES",
-    stock: 8,
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "CARGO PANTS",
-    price: 120,
-    image: "/cargo-pants.png",
-    category: "BOTTOMS",
-    stock: 0,
-    status: "out_of_stock",
-  },
-  {
-    id: "4",
-    name: "CROPPED JACKET",
-    price: 150,
-    image: "/cropped-jacket.jpg",
-    category: "JACKETS",
-    stock: 5,
-    status: "low_stock",
-  },
-]
+
 
 export default function AdminProductsPage() {
-  const [editingProduct, setEditingProduct] = useState<(typeof products)[0] | null>(null)
+  const { products: productsList, loading, error } = useProducts()
+  const [editingProduct, setEditingProduct] = useState<any | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleEditProduct = (product: (typeof products)[0]) => {
+  const handleEditProduct = (product: any) => {
     setEditingProduct(product)
     setSelectedImage(product.image)
     setIsEditModalOpen(true)
@@ -143,6 +107,14 @@ export default function AdminProductsPage() {
           </Button>
         </div>
 
+        {/* Loading / Error states */}
+        {loading && (
+          <div className="mb-4 text-sm text-muted-foreground">Loading products...</div>
+        )}
+        {error && (
+          <div className="mb-4 text-sm text-red-500">Error: {error}</div>
+        )}
+
         {/* Products Table */}
         <Card>
           <CardHeader>
@@ -150,57 +122,72 @@ export default function AdminProductsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {products.map((product) => (
-                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <Image
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
-                      width={60}
-                      height={60}
-                      className="rounded object-cover"
-                    />
-                    <div>
-                      <h3 className="font-semibold">{product.name}</h3>
-                      <p className="text-sm text-muted-foreground">{product.category}</p>
-                      <p className="text-sm font-medium">${product.price}</p>
+              {productsList.map((product) => {
+                const stockVal = typeof product.stock === 'number' ? product.stock : undefined
+                const status = (() => {
+                  if (stockVal === 0) return "out_of_stock"
+                  if (typeof stockVal === 'number' && stockVal <= 5) return "low_stock"
+                  return product.inStock ? "active" : "inactive"
+                })()
+
+                const badgeVariant =
+                  status === "active"
+                    ? "default"
+                    : status === "low_stock"
+                      ? "secondary"
+                      : "destructive"
+
+                const badgeText =
+                  status === "active"
+                    ? "Active"
+                    : status === "low_stock"
+                      ? "Low Stock"
+                      : status === "out_of_stock"
+                        ? "Out of Stock"
+                        : "Inactive"
+
+                return (
+                  <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <Image
+                        src={product.image || "/placeholder.svg"}
+                        alt={product.name}
+                        width={60}
+                        height={60}
+                        className="rounded object-cover"
+                      />
+                      <div>
+                        <h3 className="font-semibold">{product.name}</h3>
+                        <p className="text-sm text-muted-foreground">{product.category}</p>
+                        <p className="text-sm font-medium">{product.price ?? `$${product.priceNumeric}`}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <p className="text-sm font-medium">Stock: {stockVal ?? '-'}</p>
+                        <Badge variant={badgeVariant as any}>{badgeText}</Badge>
+                      </div>
+
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/products/${product.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/admin/products/${product.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="text-sm font-medium">Stock: {product.stock}</p>
-                      <Badge
-                        variant={
-                          product.status === "active"
-                            ? "default"
-                            : product.status === "low_stock"
-                              ? "secondary"
-                              : "destructive"
-                        }
-                      >
-                        {product.status === "active"
-                          ? "Active"
-                          : product.status === "low_stock"
-                            ? "Low Stock"
-                            : "Out of Stock"}
-                      </Badge>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleEditProduct(product)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -215,6 +202,7 @@ export default function AdminProductsPage() {
                 <div className="grid grid-cols-4 items-start gap-4">
                   <Label className="text-right font-medium pt-2">Image</Label>
                   <div className="col-span-3 space-y-3">
+                    {/* Dropzone and preview retained */}
                     <div
                       className={`relative border-2 border-dashed rounded-lg p-4 transition-colors ${
                         isDragOver
@@ -298,8 +286,8 @@ export default function AdminProductsPage() {
                   <Input
                     id="price"
                     type="number"
-                    value={editingProduct.price}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })}
+                    value={editingProduct.priceNumeric ?? 0}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, priceNumeric: Number(e.target.value) })}
                     className="col-span-3"
                   />
                 </div>
@@ -330,7 +318,7 @@ export default function AdminProductsPage() {
                   <Input
                     id="stock"
                     type="number"
-                    value={editingProduct.stock}
+                    value={editingProduct.stock ?? 0}
                     onChange={(e) => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })}
                     className="col-span-3"
                   />

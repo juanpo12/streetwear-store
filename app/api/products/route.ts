@@ -230,6 +230,7 @@ export async function GET(request: Request) {
           name: product.name,
           price: formatPriceToARS(parseFloat(product.price)),
           priceNumeric: parseFloat(product.price),
+          stock: product.stock || 0,
           image: productImgs.length > 0 ? productImgs[0].url : '/placeholder.svg',
           category: product.categoryName || 'GENERAL',
           description: product.description || '',
