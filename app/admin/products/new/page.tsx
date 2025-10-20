@@ -25,8 +25,8 @@ export default function NewProductPage() {
 
   // Estados para los datos dinámicos
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([])
-  const [sizes, setSizes] = useState<string[]>([])
-  const [colors, setColors] = useState<string[]>([])
+  const [sizes, setSizes] = useState<{ id: string; name: string; displayOrder: number }[]>([])
+  const [colors, setColors] = useState<{ id: string; name: string; hexCode: string | null; displayOrder: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   // Funciones para cargar datos desde los endpoints
