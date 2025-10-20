@@ -112,6 +112,25 @@ export async function GET(request: Request) {
           .where(eq(productVariants.productId, id))
 
         const productData = product[0]
+        const sizesFromTitle = variants
+          .map(v => (v.title.includes(' / ') ? v.title.split(' / ')[0] : v.title).trim())
+          .filter(s => s && s.toLowerCase() !== 'variante por defecto' && s.toLowerCase() !== 'talla única')
+        const sizesFromSku = variants
+          .map(v => {
+            const parts = v.sku ? v.sku.split('-') : []
+            return parts.length >= 3 ? parts[parts.length - 2] : null
+          })
+          .filter(Boolean)
+        const colorsFromTitle = variants
+          .map(v => v.title.split(' / ')[1]?.trim())
+          .filter(Boolean)
+        const colorsFromSku = variants
+          .map(v => {
+            const parts = v.sku ? v.sku.split('-') : []
+            return parts.length >= 1 ? parts[parts.length - 1] : null
+          })
+          .filter(Boolean)
+
         const formattedProduct = {
           id: productData.id,
           name: productData.name,
@@ -122,8 +141,8 @@ export async function GET(request: Request) {
           images: images.map(img => ({ url: img.url, altText: img.altText })),
           category: productData.categoryName || 'GENERAL',
           description: productData.description || '',
-          sizes: [...new Set(variants.map(v => v.title).filter(Boolean))],
-          colors: ['Black'], // Por ahora hardcodeado, se puede expandir
+          sizes: Array.from(new Set([ ...sizesFromTitle, ...sizesFromSku ])),
+          colors: Array.from(new Set([ ...colorsFromTitle, ...colorsFromSku ])),
           inStock: productData.isActive && (productData.stock || 0) > 0,
           featured: productData.isFeatured
         }
@@ -187,6 +206,24 @@ export async function GET(request: Request) {
       const formattedProducts = productsData.map(product => {
         const productImgs = allImages.filter(img => img.productId === product.id)
         const productVars = allVariants.filter(variant => variant.productId === product.id)
+        const sizesFromTitle = productVars
+          .map(v => (v.title.includes(' / ') ? v.title.split(' / ')[0] : v.title).trim())
+          .filter(s => s && s.toLowerCase() !== 'variante por defecto' && s.toLowerCase() !== 'talla única')
+        const sizesFromSku = productVars
+          .map(v => {
+            const parts = v.sku ? v.sku.split('-') : []
+            return parts.length >= 3 ? parts[parts.length - 2] : null
+          })
+          .filter(Boolean)
+        const colorsFromTitle = productVars
+          .map(v => v.title.split(' / ')[1]?.trim())
+          .filter(Boolean)
+        const colorsFromSku = productVars
+          .map(v => {
+            const parts = v.sku ? v.sku.split('-') : []
+            return parts.length >= 1 ? parts[parts.length - 1] : null
+          })
+          .filter(Boolean)
         
         return {
           id: product.id,
@@ -196,8 +233,8 @@ export async function GET(request: Request) {
           image: productImgs.length > 0 ? productImgs[0].url : '/placeholder.svg',
           category: product.categoryName || 'GENERAL',
           description: product.description || '',
-          sizes: [...new Set(productVars.map(v => v.title).filter(Boolean))],
-          colors: ['Black'], // Por ahora hardcodeado, se puede expandir
+          sizes: Array.from(new Set([ ...sizesFromTitle, ...sizesFromSku ])),
+          colors: Array.from(new Set([ ...colorsFromTitle, ...colorsFromSku ])),
           inStock: product.isActive,
           featured: product.isFeatured
         }

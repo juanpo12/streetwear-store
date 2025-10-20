@@ -83,6 +83,7 @@ export async function GET(
           price: products.price,
           categoryName: categories.name,
           isActive: products.isActive,
+          stock: products.stock,
           isFeatured: products.isFeatured,
           createdAt: products.createdAt
         })
@@ -100,17 +101,17 @@ export async function GET(
 
       const product = productResult[0]
 
-      // Obtener imagen principal del producto
-      const primaryImage = await db
+      // Obtener imágenes del producto
+      const imagesAll = await db
         .select({
           url: productImages.url,
-          altText: productImages.altText
+          altText: productImages.altText,
+          position: productImages.position
         })
         .from(productImages)
         .where(eq(productImages.productId, product.id))
         .orderBy(productImages.position)
-        .limit(1)
-
+      
       // Obtener variantes del producto (tallas, colores, etc.)
       const variants = await db
         .select({
@@ -127,9 +128,31 @@ export async function GET(
           eq(productVariants.isActive, true)
         ))
 
-      // Extraer tallas y colores únicos de las variantes
-      const sizes = [...new Set(variants.map(v => v.title.split(' / ')[0]).filter(Boolean))]
-      const colors = [...new Set(variants.map(v => v.title.split(' / ')[1]).filter(Boolean))]
+      // Extraer tallas y colores únicos (robusto con título y SKU)
+      const sizesFromTitle = variants
+        .map(v => (v.title.includes(' / ') ? v.title.split(' / ')[0] : v.title).trim())
+        .filter(s => s && s.toLowerCase() !== 'variante por defecto' && s.toLowerCase() !== 'talla única')
+      const sizesFromSku = variants
+        .map(v => {
+          const parts = v.sku ? v.sku.split('-') : []
+          return parts.length >= 3 ? parts[parts.length - 2] : null
+        })
+        .filter(Boolean)
+      const sizes = Array.from(new Set([ ...sizesFromTitle, ...sizesFromSku ]))
+
+      const colorsFromTitle = variants
+        .map(v => {
+          const parts = v.title.split(' / ')
+          return parts[1]?.trim()
+        })
+        .filter(Boolean)
+      const colorsFromSku = variants
+        .map(v => {
+          const parts = v.sku ? v.sku.split('-') : []
+          return parts.length >= 1 ? parts[parts.length - 1] : null
+        })
+        .filter(Boolean)
+      const colors = Array.from(new Set([ ...colorsFromTitle, ...colorsFromSku ]))
 
       // Formatear el producto final
       const finalProduct = {
@@ -138,13 +161,14 @@ export async function GET(
         description: product.description,
         price: formatPriceToARS(parseFloat(product.price)),
         priceNumeric: parseFloat(product.price),
-        image: primaryImage.length > 0 
-          ? primaryImage[0].url
+        image: imagesAll.length > 0 
+          ? imagesAll[0].url
           : '/placeholder.svg',
+        images: imagesAll.map(img => ({ url: img.url, altText: img.altText })),
         category: product.categoryName || 'Sin categoría',
-        sizes: sizes.length > 0 ? sizes : ['S', 'M', 'L', 'XL'], // Fallback sizes
-        colors: colors.length > 0 ? colors : ['Negro'], // Fallback color
-        inStock: variants.some(v => v.inventoryQuantity > 0),
+        sizes: sizes.length > 0 ? sizes : ['Talla Única'],
+        colors: colors.length > 0 ? colors : ['Negro'],
+        inStock: product.isActive && ((product.stock || 0) > 0 || variants.some(v => (v.inventoryQuantity || 0) > 0)),
         featured: product.isFeatured,
         variants: variants
       }
