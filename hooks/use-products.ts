@@ -275,7 +275,7 @@ export const useCreateProduct = (): UseCreateProductReturn => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
-        credentials: 'include' // Include cookies for authentication
+        // credentials: 'include' // Include cookies for authentication - Commented out as requested
       })
 
       const result = await response.json()

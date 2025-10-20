@@ -35,7 +35,7 @@ export default function NewProductPage() {
     colors: [] as string[],
   })
 
-  const [productImages, setProductImages] = useState<string[]>([])
+  const [productImages, setProductImages] = useState<{url: string, originalName: string, fileName: string, filePath: string, size: number, type: string}[]>([])
 
   // Usar los hooks personalizados
   const { categories, loading: categoriesLoading, error: categoriesError, createCategory } = useCategories()
@@ -76,7 +76,7 @@ export default function NewProductPage() {
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       isFeatured: formData.isFeatured,
-      images: productImages,
+      images: productImages.map(img => img.url),
       sizes: formData.sizes,
       colors: formData.colors,
     })

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { products, categories, productImages, productVariants, users } from '@/lib/db/schema'
-import { eq, and, sql } from 'drizzle-orm'
-import { cookies } from 'next/headers'
+import { eq, and, sql, inArray } from 'drizzle-orm'
+// import { cookies } from 'next/headers' // Commented out as requested
 
 // Función para verificar conectividad de base de datos
 async function isDatabaseAvailable(): Promise<boolean> {
@@ -102,6 +102,7 @@ export async function GET(request: Request) {
           .select()
           .from(productImages)
           .where(eq(productImages.productId, id))
+          .orderBy(productImages.position)
 
         // Obtener variantes del producto (para tallas)
         const variants = await db
@@ -126,7 +127,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
           success: true,
-          data: [formattedProduct],
+          data: formattedProduct,
           total: 1
         })
       }
@@ -168,13 +169,14 @@ export async function GET(request: Request) {
         allImages = await db
           .select()
           .from(productImages)
-          .where(sql`${productImages.productId} = ANY(${sql.raw(`ARRAY[${productIds.map(id => `'${id}'::uuid`).join(',')}]`)})`)
+          .where(inArray(productImages.productId, productIds))
+          .orderBy(productImages.position)
 
         // Obtener variantes para todos los productos (para tallas)
         allVariants = await db
           .select()
           .from(productVariants)
-          .where(sql`${productVariants.productId} = ANY(${sql.raw(`ARRAY[${productIds.map(id => `'${id}'::uuid`).join(',')}]`)})`)
+          .where(inArray(productVariants.productId, productIds))
       }
 
       // Formatear productos
@@ -247,21 +249,21 @@ export async function POST(request: Request) {
     // }
 
     // Verificar que el usuario existe en nuestra base de datos usando Drizzle
-    try {
-      const userResult = await db.select().from(users).limit(1)
-      if (!userResult.length) {
-        return NextResponse.json(
-          { success: false, error: 'Usuario no encontrado' },
-          { status: 401 }
-        )
-      }
-    } catch (dbError) {
-      console.error('Database error during auth check:', dbError)
-      return NextResponse.json(
-        { success: false, error: 'Error de conexión a la base de datos' },
-        { status: 500 }
-      )
-    }
+    // try {
+    //   const userResult = await db.select().from(users).limit(1)
+    //   if (!userResult.length) {
+    //     return NextResponse.json(
+    //       { success: false, error: 'Usuario no encontrado' },
+    //       { status: 401 }
+    //     )
+    //   }
+    // } catch (dbError) {
+    //   console.error('Database error during auth check:', dbError)
+    //   return NextResponse.json(
+    //     { success: false, error: 'Error de conexión a la base de datos' },
+    //     { status: 500 }
+    //   )
+    // }
 
     // Verificar disponibilidad de base de datos
     const dbAvailable = await isDatabaseAvailable()
@@ -347,7 +349,7 @@ export async function POST(request: Request) {
           productId,
           url: imageUrl,
           altText: `${name} - Imagen ${index + 1}`,
-          position: index
+          position: index + 1
         }))
 
         await db.insert(productImages).values(imageInserts)

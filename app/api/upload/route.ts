@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
-import { cookies } from 'next/headers'
+import { db, users } from '@/lib/db'
+// import { db } from '@/lib/db' // Commented out as requested
+// import { users } from '@/lib/db/schema' // Commented out as requested
+// import { eq } from 'drizzle-orm' // Commented out as requested
+// import { cookies } from 'next/headers' // Commented out as requested
 
 // Create Supabase client with service role key for storage operations
 const supabaseAdmin = createClient(
@@ -14,7 +15,7 @@ const supabaseAdmin = createClient(
 export async function POST(request: NextRequest) {
   try {
     // Get session token from cookies
-    const cookieStore = cookies()
+    // const cookieStore = cookies()
     // const sessionToken = cookieStore.get('sb-access-token')?.value
     
     // if (!sessionToken) {
@@ -25,21 +26,21 @@ export async function POST(request: NextRequest) {
     // }
 
     // Verify user exists in our database using Drizzle
-    try {
-      const userResult = await db.select().from(users).limit(1)
-      if (!userResult.length) {
-        return NextResponse.json(
-          { error: 'Unauthorized - User not found' },
-          { status: 401 }
-        )
-      }
-    } catch (dbError) {
-      console.error('Database error:', dbError)
-      return NextResponse.json(
-        { error: 'Database connection error' },
-        { status: 500 }
-      )
-    }
+    // try {
+    //   const userResult = await db.select().from(users).limit(1)
+    //   if (!userResult.length) {
+    //     return NextResponse.json(
+    //       { error: 'Unauthorized - User not found' },
+    //       { status: 401 }
+    //     )
+    //   }
+    // } catch (dbError) {
+    //   console.error('Database error:', dbError)
+    //   return NextResponse.json(
+    //     { error: 'Database connection error' },
+    //     { status: 500 }
+    //   )
+    // }
 
     const formData = await request.formData()
     const files = formData.getAll('files') as File[]
@@ -121,15 +122,15 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Get session token from cookies
-    const cookieStore = cookies()
-    const sessionToken = cookieStore.get('sb-access-token')?.value
+    // const cookieStore = cookies()
+    // const sessionToken = cookieStore.get('sb-access-token')?.value
     
-    if (!sessionToken) {
-      return NextResponse.json(
-        { error: 'Unauthorized - No session token' },
-        { status: 401 }
-      )
-    }
+    // if (!sessionToken) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized - No session token' },
+    //     { status: 401 }
+    //   )
+    // }
 
     // Verify user exists in our database using Drizzle
     try {
