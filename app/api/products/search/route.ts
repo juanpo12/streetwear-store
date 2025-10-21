@@ -1,24 +1,9 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { products, categories, productImages, productVariants } from '@/lib/db/schema'
-import { eq, and, sql, ilike, or } from 'drizzle-orm'
-import { createClient } from '@supabase/supabase-js'
+import { products, categories, productImages } from '@/lib/db/schema'
+import { eq, and, ilike, or } from 'drizzle-orm'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
-// Función para obtener URL pública de imagen de Supabase Storage
-function getPublicImageUrl(imagePath: string): string {
-  if (!imagePath) return '/placeholder.svg'
-  
-  const { data } = supabase.storage
-    .from('products')
-    .getPublicUrl(imagePath)
-  
-  return data.publicUrl
-}
 
 export async function GET(request: Request) {
   try {
@@ -68,9 +53,10 @@ export async function GET(request: Request) {
 
       // Aplicar límite si se especifica
       if (limit) {
-        const limitNum = parseInt(limit)
-        if (!isNaN(limitNum) && limitNum > 0) {
-          searchQuery = searchQuery.limit(limitNum)
+        const limitNum = Number.parseInt(limit, 10)
+        if (Number.isFinite(limitNum) && limitNum > 0) {
+          const safeLimit = Math.min(limitNum, 50)
+          searchQuery = searchQuery.limit(safeLimit).offset(0) as any
         }
       }
 
