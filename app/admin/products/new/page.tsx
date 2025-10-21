@@ -25,7 +25,7 @@ export default function NewProductPage() {
     shortDescription: "",
     price: "",
     compareAtPrice: "",
-    category: "",
+    categoryId: "",
     stock: "",
     weight: "",
     metaTitle: "",
@@ -59,7 +59,7 @@ export default function NewProductPage() {
     e.preventDefault()
     
     // Validación básica
-    if (!formData.name || !formData.price || !formData.category) {
+    if (!formData.name || !formData.price || !formData.categoryId) {
       alert("Por favor completa los campos obligatorios: nombre, precio y categoría")
       return
     }
@@ -70,7 +70,7 @@ export default function NewProductPage() {
       shortDescription: formData.shortDescription,
       price: parseFloat(formData.price),
       compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : undefined,
-      category: formData.category,
+      categoryId: formData.categoryId,
       stock: formData.stock ? parseInt(formData.stock) : 0,
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       metaTitle: formData.metaTitle,
@@ -156,15 +156,15 @@ export default function NewProductPage() {
                     <Label htmlFor="category">Category</Label>
                     <CreatableSelect
                       options={categories.map(cat => ({ id: cat.id, name: cat.name }))}
-                      value={formData.category ? [categories.find(cat => cat.id === formData.category)?.name || formData.category] : []}
+                      value={formData.categoryId ? [categories.find(cat => cat.id === formData.categoryId)?.name || formData.categoryId] : []}
                       onChange={(value) => {
                         const selectedCategory = categories.find(cat => cat.name === value[0])
-                        setFormData({ ...formData, category: selectedCategory?.id || value[0] || "" })
+                        setFormData({ ...formData, categoryId: selectedCategory?.id || value[0] || "" })
                       }}
                       onCreateOption={async (name) => {
                         const newCategory = await createCategory({ name })
                         if (newCategory) {
-                          setFormData({ ...formData, category: newCategory.id })
+                          setFormData({ ...formData, categoryId: newCategory.id })
                         }
                       }}
                       placeholder={loading ? "Loading categories..." : "Select or create category"}
