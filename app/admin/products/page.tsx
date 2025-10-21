@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Trash2, Eye, Upload, X } from "lucide-react"
+import { Plus, Edit, Trash2, Eye, Upload, X, Star } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useRef } from "react"
@@ -18,12 +18,14 @@ import { useProducts } from "@/hooks/use-products"
 
 
 export default function AdminProductsPage() {
-  const { products: productsList, loading, error } = useProducts()
+  const { products: productsList, loading, error, fetchProducts } = useProducts()
   const [editingProduct, setEditingProduct] = useState<any | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [updateError, setUpdateError] = useState<string | null>(null)
 
   const handleEditProduct = (product: any) => {
     setEditingProduct(product)
@@ -37,6 +39,27 @@ export default function AdminProductsPage() {
     setIsEditModalOpen(false)
     setEditingProduct(null)
     setSelectedImage(null)
+  }
+
+  const handleToggleFeatured = async (product: any) => {
+    setUpdateError(null)
+    setTogglingId(product.id)
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFeatured: !product.featured }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Error al actualizar destacado')
+      await fetchProducts()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido'
+      setUpdateError(msg)
+      console.error('Error toggling featured:', err)
+    } finally {
+      setTogglingId(null)
+    }
   }
 
   const handleImageUpload = (file: File) => {
@@ -114,6 +137,9 @@ export default function AdminProductsPage() {
         {error && (
           <div className="mb-4 text-sm text-red-500">Error: {error}</div>
         )}
+        {updateError && (
+          <div className="mb-4 text-sm text-red-500">Error: {updateError}</div>
+        )}
 
         {/* Products Table */}
         <Card>
@@ -170,6 +196,16 @@ export default function AdminProductsPage() {
                       </div>
 
                       <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant={product.featured ? "default" : "outline"}
+                          onClick={() => handleToggleFeatured(product)}
+                          disabled={togglingId === product.id}
+                          title={product.featured ? "Quitar destacado" : "Marcar como destacado"}
+                          aria-pressed={product.featured}
+                        >
+                          <Star className={`h-4 w-4 ${product.featured ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                        </Button>
                         <Button size="sm" variant="outline" asChild>
                           <Link href={`/products/${product.id}`} target="_blank" rel="noopener noreferrer">
                             <Eye className="h-4 w-4" />
