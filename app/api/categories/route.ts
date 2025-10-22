@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { categories } from '@/lib/db/schema'
+import { categories, users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
@@ -62,5 +63,55 @@ export async function POST(req: Request) {
       { error: 'Failed to create category' },
       { status: 500 }
     )
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.auth.getUser()
+    if (error || !data.user) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const authUserId = data.user.id
+
+    // 2) Verificar rol admin en BD
+    const [record] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, authUserId))
+      .limit(1)
+
+    if (!record || record.role !== 'admin') {
+      return NextResponse.json({ error: 'Privilegios de admin requeridos' }, { status: 403 })
+    }
+
+    // 3) Validar input y eliminar
+    const { id } = await req.json()
+    if (!id) {
+      return NextResponse.json({ error: 'Category ID es requerido' }, { status: 400 })
+    }
+
+    const deleted = await db
+      .delete(categories)
+      .where(eq(categories.id, id))
+      .returning({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+        description: categories.description,
+        imageUrl: categories.imageUrl,
+        isActive: categories.isActive,
+      })
+
+    if (deleted.length === 0) {
+      return NextResponse.json({ error: 'Categoría no encontrada' }, { status: 404 })
+    }
+
+    return NextResponse.json(deleted[0])
+  } catch (error) {
+    console.error('Error deleting category:', error)
+    return NextResponse.json({ error: 'Fallo al eliminar categoría' }, { status: 500 })
   }
 }
