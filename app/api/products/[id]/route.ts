@@ -112,17 +112,24 @@ export async function GET(
           eq(productVariants.isActive, true)
         ))
 
-      // Extraer tallas y colores únicos (robusto con título y SKU)
+      // Extraer tallas y colores únicos (robusto con título)
       const sizesFromTitle = variants
         .map(v => (v.title.includes(' / ') ? v.title.split(' / ')[0] : v.title).trim())
         .filter(s => s && s.toLowerCase() !== 'variante por defecto' && s.toLowerCase() !== 'talla única')
-      const sizesFromSku = variants
-        .map(v => {
-          const parts = v.sku ? v.sku.split('-') : []
-          return parts.length >= 3 ? parts[parts.length - 2] : null
-        })
-        .filter(Boolean)
-      const sizes = Array.from(new Set([ ...sizesFromTitle, ...sizesFromSku ]))
+
+      const normalizeUnique = (arr: (string | null | undefined)[]) => {
+        const map = new Map<string, string>()
+        for (const val of arr) {
+          if (!val) continue
+          const key = String(val).trim().toLowerCase()
+          if (!map.has(key)) {
+            map.set(key, String(val).trim())
+          }
+        }
+        return Array.from(map.values())
+      }
+
+      const sizes = normalizeUnique(sizesFromTitle)
 
       const colorsFromTitle = variants
         .map(v => {
@@ -130,13 +137,8 @@ export async function GET(
           return parts[1]?.trim()
         })
         .filter(Boolean)
-      const colorsFromSku = variants
-        .map(v => {
-          const parts = v.sku ? v.sku.split('-') : []
-          return parts.length >= 1 ? parts[parts.length - 1] : null
-        })
-        .filter(Boolean)
-      const colors = Array.from(new Set([ ...colorsFromTitle, ...colorsFromSku ]))
+
+      const colors = normalizeUnique(colorsFromTitle as string[])
 
       // Formatear el producto final
       const finalProduct = {
