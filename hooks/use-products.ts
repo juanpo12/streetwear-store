@@ -384,6 +384,7 @@ export interface UseProductsOptions {
   excludeUncategorized?: boolean
   noCategory?: boolean
   lowStock?: number
+  excludeOutOfStock?: boolean
 }
 
 export interface UseProductsReturn {
@@ -407,6 +408,7 @@ export const useProducts = (opts?: UseProductsOptions): UseProductsReturn => {
     if (options?.excludeUncategorized) params.set('excludeUncategorized', 'true')
     if (options?.noCategory) params.set('noCategory', 'true')
     if (typeof options?.lowStock === 'number') params.set('lowStock', String(options.lowStock))
+    if (options?.excludeOutOfStock) params.set('excludeOutOfStock', 'true')
     const qs = params.toString()
     return `/api/products${qs ? `?${qs}` : ''}`
   }
@@ -433,7 +435,7 @@ export const useProducts = (opts?: UseProductsOptions): UseProductsReturn => {
   useEffect(() => {
     fetchProducts(opts)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts?.category, opts?.featured, opts?.limit, opts?.query, opts?.excludeUncategorized, opts?.noCategory, opts?.lowStock])
+  }, [opts?.category, opts?.featured, opts?.limit, opts?.query, opts?.excludeUncategorized, opts?.noCategory, opts?.lowStock, opts?.excludeOutOfStock])
 
   return { products, loading, error, fetchProducts }
 }

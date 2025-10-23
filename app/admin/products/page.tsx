@@ -38,7 +38,7 @@ export default function AdminProductsPage() {
         const [uncRes, oosRes, lowRes] = await Promise.all([
           fetch('/api/products?noCategory=true'),
           fetch('/api/products?lowStock=0'),
-          fetch('/api/products?lowStock=5')
+          fetch('/api/products?lowStock=5&excludeOutOfStock=true')
         ])
         const unc = await uncRes.json()
         const oos = await oosRes.json()
@@ -62,7 +62,7 @@ export default function AdminProductsPage() {
     } else if (adminFilter === 'out_of_stock') {
       fetchProducts({ lowStock: 0 })
     } else if (adminFilter === 'low_stock') {
-      fetchProducts({ lowStock: 5 })
+      fetchProducts({ lowStock: 5, excludeOutOfStock: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminFilter])

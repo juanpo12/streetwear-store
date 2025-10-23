@@ -58,6 +58,7 @@ export async function GET(request: Request) {
     const excludeUncategorized = searchParams.get('excludeUncategorized') === 'true'
     const noCategory = searchParams.get('noCategory') === 'true'
     const lowStock = searchParams.get('lowStock')
+    const excludeOutOfStock = searchParams.get('excludeOutOfStock') === 'true'
 
     // Verificar disponibilidad de base de datos ANTES de intentar conectar
     const dbAvailable = await isDatabaseAvailable()
@@ -187,6 +188,10 @@ export async function GET(request: Request) {
 
       if (noCategory) {
         conditions.push(sql`${products.categoryId} IS NULL`)
+      }
+
+      if (excludeOutOfStock) {
+        conditions.push(sql`${products.stock} > 0`)
       }
 
       if (lowStock) {
