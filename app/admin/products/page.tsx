@@ -9,10 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Trash2, Eye, Upload, X, Star } from "lucide-react"
+import { Plus, Edit, Trash2, Eye, Upload, X, Star, Filter } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useProducts } from "@/hooks/use-products"
 
 
@@ -26,6 +26,46 @@ export default function AdminProductsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [updateError, setUpdateError] = useState<string | null>(null)
+  const [adminFilter, setAdminFilter] = useState<'all'|'uncategorized'|'out_of_stock'|'low_stock'>('all')
+  const [noCategoryCount, setNoCategoryCount] = useState<number>(0)
+  const [outOfStockCount, setOutOfStockCount] = useState<number>(0)
+  const [lowStockCount, setLowStockCount] = useState<number>(0)
+
+  useEffect(() => {
+    // Fetch analytics counts
+    const fetchAnalytics = async () => {
+      try {
+        const [uncRes, oosRes, lowRes] = await Promise.all([
+          fetch('/api/products?noCategory=true'),
+          fetch('/api/products?lowStock=0'),
+          fetch('/api/products?lowStock=5')
+        ])
+        const unc = await uncRes.json()
+        const oos = await oosRes.json()
+        const low = await lowRes.json()
+        setNoCategoryCount(Array.isArray(unc.data) ? unc.data.length : (unc.total || 0))
+        setOutOfStockCount(Array.isArray(oos.data) ? oos.data.length : (oos.total || 0))
+        setLowStockCount(Array.isArray(low.data) ? low.data.length : (low.total || 0))
+      } catch (e) {
+        console.error('Error fetching analytics:', e)
+      }
+    }
+    fetchAnalytics()
+  }, [])
+
+  useEffect(() => {
+    // Apply admin filter
+    if (adminFilter === 'all') {
+      fetchProducts()
+    } else if (adminFilter === 'uncategorized') {
+      fetchProducts({ noCategory: true })
+    } else if (adminFilter === 'out_of_stock') {
+      fetchProducts({ lowStock: 0 })
+    } else if (adminFilter === 'low_stock') {
+      fetchProducts({ lowStock: 5 })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminFilter])
 
   const handleEditProduct = (product: any) => {
     setEditingProduct(product)
@@ -129,6 +169,52 @@ export default function AdminProductsPage() {
             </Link>
           </Button>
         </div>
+
+        {/* Analytics & Filters */}
+        <Card className="mb-6">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle>OVERVIEW</CardTitle>
+            <div className="flex gap-2">
+              <Button variant={adminFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setAdminFilter('all')}>
+                <Filter className="h-4 w-4 mr-2" /> Todos
+              </Button>
+              <Button variant={adminFilter === 'uncategorized' ? 'default' : 'outline'} size="sm" onClick={() => setAdminFilter('uncategorized')}>
+                Sin categoría
+              </Button>
+              <Button variant={adminFilter === 'out_of_stock' ? 'default' : 'outline'} size="sm" onClick={() => setAdminFilter('out_of_stock')}>
+                Sin stock
+              </Button>
+              <Button variant={adminFilter === 'low_stock' ? 'default' : 'outline'} size="sm" onClick={() => setAdminFilter('low_stock')}>
+                Stock bajo (≤5)
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 border rounded-lg flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Productos sin categoría</p>
+                  <p className="text-xl font-semibold">{noCategoryCount}</p>
+                </div>
+                <Badge variant="secondary">Revisar</Badge>
+              </div>
+              <div className="p-4 border rounded-lg flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Productos sin stock</p>
+                  <p className="text-xl font-semibold">{outOfStockCount}</p>
+                </div>
+                <Badge variant="destructive">Atención</Badge>
+              </div>
+              <div className="p-4 border rounded-lg flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Stock bajo (≤5)</p>
+                  <p className="text-xl font-semibold">{lowStockCount}</p>
+                </div>
+                <Badge>Monitorear</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Loading / Error states */}
         {loading && (

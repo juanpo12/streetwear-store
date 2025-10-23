@@ -67,7 +67,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/products?limit=8')
+      const response = await fetch('/api/products?limit=8&excludeUncategorized=true')
       const data: ApiResponse = await response.json()
       
       if (data.success) {
@@ -87,7 +87,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
+      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&excludeUncategorized=true`)
       const data: ApiResponse = await response.json()
       
       if (data.success) {

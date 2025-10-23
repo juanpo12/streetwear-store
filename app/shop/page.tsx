@@ -12,7 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 const ITEMS_PER_PAGE = 12
 
 const ShopPage: React.FC = () => {
-  const { products, loading, error, fetchProducts } = useProducts()
+  const { products, loading, error, fetchProducts } = useProducts({ excludeUncategorized: true })
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL")
   const [currentPage, setCurrentPage] = useState<number>(1)
 

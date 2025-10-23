@@ -55,6 +55,9 @@ export async function GET(request: Request) {
     const featured = searchParams.get('featured')
     const limit = searchParams.get('limit')
     const id = searchParams.get('id')
+    const excludeUncategorized = searchParams.get('excludeUncategorized') === 'true'
+    const noCategory = searchParams.get('noCategory') === 'true'
+    const lowStock = searchParams.get('lowStock')
 
     // Verificar disponibilidad de base de datos ANTES de intentar conectar
     const dbAvailable = await isDatabaseAvailable()
@@ -176,6 +179,21 @@ export async function GET(request: Request) {
 
       if (featured === 'true') {
         conditions.push(eq(products.isFeatured, true))
+      }
+
+      if (excludeUncategorized) {
+        conditions.push(sql`${products.categoryId} IS NOT NULL`)
+      }
+
+      if (noCategory) {
+        conditions.push(sql`${products.categoryId} IS NULL`)
+      }
+
+      if (lowStock) {
+        const threshold = Number.parseInt(lowStock, 10)
+        if (Number.isFinite(threshold)) {
+          conditions.push(sql`${products.stock} <= ${threshold}`)
+        }
       }
 
       // Ejecutar query con condiciones

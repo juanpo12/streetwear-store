@@ -36,7 +36,7 @@ export function SearchSidebar() {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/products?limit=6')
+      const response = await fetch('/api/products?limit=6&excludeUncategorized=true')
       const data = await response.json()
       
       if (data.success) {
@@ -58,7 +58,7 @@ export function SearchSidebar() {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&limit=10`)
+      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&limit=10&excludeUncategorized=true`)
       const data: ApiResponse = await response.json()
       
       if (data.success) {

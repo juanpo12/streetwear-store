@@ -381,6 +381,9 @@ export interface UseProductsOptions {
   featured?: boolean
   limit?: number
   query?: string
+  excludeUncategorized?: boolean
+  noCategory?: boolean
+  lowStock?: number
 }
 
 export interface UseProductsReturn {
@@ -392,7 +395,7 @@ export interface UseProductsReturn {
 
 export const useProducts = (opts?: UseProductsOptions): UseProductsReturn => {
   const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
   const buildUrl = (options?: UseProductsOptions) => {
@@ -401,6 +404,9 @@ export const useProducts = (opts?: UseProductsOptions): UseProductsReturn => {
     if (options?.featured) params.set('featured', 'true')
     if (options?.limit) params.set('limit', String(options.limit))
     if (options?.query) params.set('q', options.query)
+    if (options?.excludeUncategorized) params.set('excludeUncategorized', 'true')
+    if (options?.noCategory) params.set('noCategory', 'true')
+    if (typeof options?.lowStock === 'number') params.set('lowStock', String(options.lowStock))
     const qs = params.toString()
     return `/api/products${qs ? `?${qs}` : ''}`
   }
@@ -427,7 +433,7 @@ export const useProducts = (opts?: UseProductsOptions): UseProductsReturn => {
   useEffect(() => {
     fetchProducts(opts)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts?.category, opts?.featured, opts?.limit, opts?.query])
+  }, [opts?.category, opts?.featured, opts?.limit, opts?.query, opts?.excludeUncategorized, opts?.noCategory, opts?.lowStock])
 
   return { products, loading, error, fetchProducts }
 }

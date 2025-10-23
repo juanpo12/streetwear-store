@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { products, categories, productImages } from '@/lib/db/schema'
-import { eq, and, ilike, or } from 'drizzle-orm'
+import { eq, and, ilike, or, sql } from 'drizzle-orm'
 
 
 
@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     const query = searchParams.get('q')
     const category = searchParams.get('category')
     const limit = searchParams.get('limit')
+    const excludeUncategorized = searchParams.get('excludeUncategorized') === 'true'
 
     if (!query) {
       return NextResponse.json(
@@ -33,6 +34,11 @@ export async function GET(request: Request) {
       // Agregar filtro de categoría si se especifica
       if (category) {
         searchConditions.push(eq(categories.name, category.toUpperCase()))
+      }
+
+      // Excluir productos sin categoría cuando se solicite explícitamente
+      if (excludeUncategorized) {
+        searchConditions.push(sql`${products.categoryId} IS NOT NULL`)
       }
 
       // Construir query base
