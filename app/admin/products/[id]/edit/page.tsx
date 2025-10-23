@@ -14,6 +14,7 @@ import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useCategories, useSizes, useColors } from "@/hooks/use-products"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface UploadedImage {
   originalName: string
@@ -45,6 +46,10 @@ export default function EditProductPage() {
     colors: [] as string[],
   })
 
+  const defaultSizes = ['S','M','L','XL','XXL']
+  const [isSingleModel, setIsSingleModel] = useState(false)
+  const [sizeStocks, setSizeStocks] = useState<Record<string, number>>({})
+  const [sizeColorStocks, setSizeColorStocks] = useState<Record<string, Record<string, number>>>({})
   const [existingImages, setExistingImages] = useState<string[]>([])
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
   const [saving, setSaving] = useState(false)
@@ -86,6 +91,29 @@ export default function EditProductPage() {
         })
         const imgs = Array.isArray(p.images) ? p.images.map((i: any) => i.url || i) : []
         setExistingImages(imgs)
+
+        const variants = Array.isArray(p.variants) ? p.variants : []
+        const initialColorStocks: Record<string, Record<string, number>> = {}
+        variants.forEach((v: any) => {
+          const parts = (v.title || '').includes(' / ') ? (v.title || '').split(' / ') : [(v.title || '').trim(), 'Color Único']
+          const size = (parts[0] || '').trim()
+          const color = (parts[1] || 'Color Único').trim()
+          if (!initialColorStocks[color]) initialColorStocks[color] = {}
+          initialColorStocks[color][size] = v.inventoryQuantity || 0
+        })
+        setSizeColorStocks(initialColorStocks)
+
+        const single = ((p.colors || []).length <= 1)
+        setIsSingleModel(single)
+        if (single) {
+          const uniqueColor = Object.keys(initialColorStocks)[0] || 'Color Único'
+          const stocks: Record<string, number> = {}
+          defaultSizes.forEach(s => {
+            const v = initialColorStocks[uniqueColor]?.[s]
+            if (typeof v === 'number') stocks[s] = v
+          })
+          setSizeStocks(stocks)
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Error desconocido'
         setError(msg)
@@ -128,8 +156,9 @@ export default function EditProductPage() {
         metaDescription: formData.metaDescription || undefined,
         isFeatured: formData.isFeatured,
         images: finalImages,
-        sizes: formData.sizes,
-        colors: formData.colors,
+        colors: isSingleModel ? [] : formData.colors,
+        sizeStocks: isSingleModel ? sizeStocks : undefined,
+        sizeColorStocks: !isSingleModel ? sizeColorStocks : undefined,
       }
 
       const res = await fetch(`/api/products/${productId}`, {
@@ -251,36 +280,72 @@ export default function EditProductPage() {
                   <CardTitle>VARIANTS</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label>Available Sizes</Label>
-                    <CreatableSelect
-                      options={sizes.map(size => ({ id: size.id, name: size.name }))}
-                      value={formData.sizes}
-                      onChange={(value) => setFormData({ ...formData, sizes: value })}
-                      onCreateOption={async (name) => {
-                        await createSize({ name })
-                      }}
-                      placeholder={sizesLoading ? "Loading sizes..." : "Select or create sizes"}
-                      loading={sizesLoading}
-                      multiple={true}
-                    />
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="single-model" checked={isSingleModel} onCheckedChange={(v) => setIsSingleModel(!!v)} />
+                    <Label htmlFor="single-model">Único modelo (sin colores)</Label>
                   </div>
 
-                  <div>
-                    <Label>Available Colors</Label>
-                    <CreatableSelect
-                      options={colors.map(color => ({ id: color.id, name: color.name }))}
-                      value={formData.colors}
-                      onChange={(value) => setFormData({ ...formData, colors: value })}
-                      onCreateOption={async (name) => {
-                        await createColor({ name })
-                      }}
-                      placeholder={colorsLoading ? "Loading colors..." : "Select or create colors"}
-                      loading={colorsLoading}
-                      multiple={true}
-                    />
-                  </div>
+                  {!isSingleModel && (
+                    <div>
+                      <Label>Available Colors</Label>
+                      <CreatableSelect
+                        options={colors.map(color => ({ id: color.id, name: color.name }))}
+                        value={formData.colors}
+                        onChange={(value) => {
+                          setFormData({ ...formData, colors: value })
+                          setSizeColorStocks(prev => {
+                            const copy = { ...prev }
+                            value.forEach((c: string) => { if (!copy[c]) copy[c] = {} })
+                            return copy
+                          })
+                        }}
+                        onCreateOption={async (name) => {
+                          await createColor({ name })
+                        }}
+                        placeholder={colorsLoading ? "Loading colors..." : "Select or create colors"}
+                        loading={colorsLoading}
+                        multiple={true}
+                      />
+                    </div>
+                  )}
+
+                  {isSingleModel ? (
+                    <div className="mt-4">
+                      <Label>Stock por talle</Label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {defaultSizes.map(size => (
+                          <div key={size} className="flex items-center gap-2">
+                            <span className="w-10">{size}</span>
+                            <Input type="number" min={0} value={sizeStocks[size] ?? 0} onChange={(e) => setSizeStocks({ ...sizeStocks, [size]: parseInt(e.target.value) || 0 })} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <Label>Stock por talle y color</Label>
+                      {formData.colors.map(color => (
+                        <div key={color} className="mb-3">
+                          <div className="font-medium mb-1">{color}</div>
+                          <div className="grid grid-cols-3 gap-3">
+                            {defaultSizes.map(size => (
+                              <div key={size} className="flex items-center gap-2">
+                                <span className="w-10">{size}</span>
+                                <Input type="number" min={0} value={sizeColorStocks[color]?.[size] ?? 0} onChange={(e) => setSizeColorStocks(prev => ({ ...prev, [color]: { ...(prev[color] || {}), [size]: parseInt(e.target.value) || 0 } }))} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>VARIANTS</CardTitle>
+                </CardHeader>
+                {/* Removed legacy variants card */}
               </Card>
             </div>
 

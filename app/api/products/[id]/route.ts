@@ -220,6 +220,8 @@ export async function PUT(
       images,
       sizes,
       colors,
+      sizeStocks,
+      sizeColorStocks,
     } = body
 
     // Generador simple de SKU
@@ -286,11 +288,12 @@ export async function PUT(
       }
     }
 
-    // Actualizar variantes si se envían tallas/colores
-    if (sizes !== undefined || colors !== undefined) {
+    // Actualizar variantes si se envían tallas/colores o stocks
+    if (sizes !== undefined || colors !== undefined || sizeStocks !== undefined || sizeColorStocks !== undefined) {
       await db.delete(productVariants).where(eq(productVariants.productId, productId))
 
-      const sizesToUse = Array.isArray(sizes) && sizes.length > 0 ? sizes : ['Talla Única']
+      const defaultSizes = ['S','M','L','XL','XXL']
+      const sizesToUse = Array.isArray(sizes) && sizes.length > 0 ? sizes : defaultSizes
       const colorsToUse = Array.isArray(colors) && colors.length > 0 ? colors : ['Color Único']
 
       const variants: any[] = []
@@ -300,13 +303,17 @@ export async function PUT(
             ? 'Variante por defecto'
             : `${size} / ${color}`
 
+          const inventoryForVariant = (sizeColorStocks && sizeColorStocks[color] && typeof sizeColorStocks[color][size] === 'number')
+            ? sizeColorStocks[color][size]
+            : ((sizeStocks && typeof sizeStocks[size] === 'number') ? sizeStocks[size] : 0)
+
           variants.push({
             productId,
             title: variantTitle,
             price: (price !== undefined ? price.toString() : updatedProduct.price),
             compareAtPrice: compareAtPrice !== undefined ? (compareAtPrice ? compareAtPrice.toString() : null) : null,
             sku: baseSKU ? `${baseSKU}-${String(size).toLowerCase()}-${String(color).toLowerCase()}` : null,
-            inventoryQuantity: 0,
+            inventoryQuantity: inventoryForVariant,
             position: variants.length,
             isActive: true,
           })
