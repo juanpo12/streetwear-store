@@ -7,6 +7,13 @@ interface CreateCategoryInput {
   description?: string
 }
 
+interface UpdateCategoryInput {
+  id: string
+  name: string
+  slug?: string
+  description?: string
+}
+
 interface CreateSizeInput {
   name: string
   displayOrder?: number
@@ -37,12 +44,16 @@ interface CreateProductInput {
   colors?: string[]
 }
 
+type CategoryWithCount = Category & { productCount?: number }
+
 interface UseCategoriesReturn {
-  categories: Category[]
+  categories: CategoryWithCount[]
   loading: boolean
   error: string | null
   fetchCategories: () => Promise<void>
-  createCategory: (data: CreateCategoryInput) => Promise<Category | null>
+  createCategory: (data: CreateCategoryInput) => Promise<CategoryWithCount | null>
+  updateCategory: (data: UpdateCategoryInput) => Promise<CategoryWithCount | null>
+  deleteCategory: (id: string) => Promise<boolean>
 }
 
 interface UseSizesReturn {
@@ -70,7 +81,7 @@ interface UseCreateProductReturn {
 }
 
 export const useCategories = (): UseCategoriesReturn => {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<CategoryWithCount[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -93,7 +104,7 @@ export const useCategories = (): UseCategoriesReturn => {
     }
   }
 
-  const createCategory = async (data: CreateCategoryInput): Promise<Category | null> => {
+  const createCategory = async (data: CreateCategoryInput): Promise<CategoryWithCount | null> => {
     setError(null)
     try {
       const response = await fetch('/api/categories', {
@@ -119,6 +130,57 @@ export const useCategories = (): UseCategoriesReturn => {
     }
   }
 
+  const updateCategory = async (data: UpdateCategoryInput): Promise<CategoryWithCount | null> => {
+    setError(null)
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      const json = await response.json()
+      if (!response.ok) {
+        throw new Error(json.error || 'Failed to update category')
+      }
+
+      setCategories((prev) => prev.map((c) => c.id === data.id ? { ...c, ...json } : c))
+      return json
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error updating category'
+      setError(message)
+      console.error('Error updating category:', err)
+      return null
+    }
+  }
+
+  // deleteCategory
+  const deleteCategory = async (id: string): Promise<boolean> => {
+    setError(null)
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id }),
+      })
+      const json = await response.json()
+      if (!response.ok) {
+        throw new Error(json.error || 'Failed to delete category')
+      }
+      setCategories((prev) => prev.filter((c) => c.id !== id))
+      return true
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error deleting category'
+      setError(message)
+      console.error('Error deleting category:', err)
+      return false
+    }
+  }
+
   useEffect(() => {
     fetchCategories()
   }, [])
@@ -129,6 +191,8 @@ export const useCategories = (): UseCategoriesReturn => {
     error,
     fetchCategories,
     createCategory,
+    updateCategory,
+    deleteCategory,
   }
 }
 
