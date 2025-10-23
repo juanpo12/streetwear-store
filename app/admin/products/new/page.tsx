@@ -15,6 +15,7 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useCategories, useSizes, useColors, useCreateProduct } from "@/hooks/use-products"
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -31,8 +32,15 @@ export default function NewProductPage() {
     metaTitle: "",
     metaDescription: "",
     isFeatured: false,
-    sizes: [] as string[],
+    // Siempre usamos el set de talles por defecto
+    sizes: ["S","M","L","XL","XXL"] as string[],
+    // Toggle para definir si el producto es de "único modelo" (sin colores)
+    isSingleModel: false,
     colors: [] as string[],
+    // Stock común por talle (se usa cuando es "único modelo")
+    sizeStocks: { S: 0, M: 0, L: 0, XL: 0, XXL: 0 } as Record<string, number>,
+    // Stock por color+talle (se usa cuando NO es "único modelo")
+    sizeColorStocks: {} as Record<string, Record<string, number>>,
   })
 
   const [productImages, setProductImages] = useState<{url: string, originalName: string, fileName: string, filePath: string, size: number, type: string}[]>([])
@@ -64,6 +72,11 @@ export default function NewProductPage() {
       return
     }
 
+    const isSingleModel = !!formData.isSingleModel
+    const totalStock = isSingleModel
+      ? Object.values(formData.sizeStocks || {}).reduce((sum, v) => sum + (Number(v) || 0), 0)
+      : Object.values(formData.sizeColorStocks || {}).reduce((sum, perColor) => sum + Object.values(perColor || {}).reduce((s, v) => s + (Number(v) || 0), 0), 0)
+
     await createProduct({
       name: formData.name,
       description: formData.description,
@@ -71,14 +84,19 @@ export default function NewProductPage() {
       price: parseFloat(formData.price),
       compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : undefined,
       categoryId: formData.categoryId,
-      stock: formData.stock ? parseInt(formData.stock) : 0,
+      stock: totalStock,
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       metaTitle: formData.metaTitle,
       metaDescription: formData.metaDescription,
       isFeatured: formData.isFeatured,
       images: productImages.map(img => img.url),
-      sizes: formData.sizes,
-      colors: formData.colors,
+      // Talles siempre por defecto
+      sizes: ["S","M","L","XL","XXL"],
+      // Si es único modelo, no enviamos colores; el backend usará "Color Único" por defecto
+      colors: isSingleModel ? [] : formData.colors,
+      // Enviar stock según corresponda
+      sizeStocks: isSingleModel ? formData.sizeStocks : undefined,
+      sizeColorStocks: isSingleModel ? undefined : formData.sizeColorStocks,
     })
   }
 
@@ -140,16 +158,7 @@ export default function NewProductPage() {
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="stock">Stock</Label>
-                      <Input
-                        id="stock"
-                        type="number"
-                        placeholder="100"
-                        value={formData.stock}
-                        onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                      />
-                    </div>
+                    {/* Removed single stock input in favor of per-size stocks */}
                   </div>
 
                   <div>
@@ -180,35 +189,111 @@ export default function NewProductPage() {
                   <CardTitle>VARIANTS</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label>Available Sizes</Label>
-                    <CreatableSelect
-                      options={sizes.map(size => ({ id: size.id, name: size.name }))}
-                      value={formData.sizes}
-                      onChange={(value) => setFormData({ ...formData, sizes: value })}
-                      onCreateOption={async (name) => {
-                        await createSize({ name })
+                  {/* Toggle Único modelo */}
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="single-model"
+                      checked={formData.isSingleModel}
+                      onCheckedChange={(checked) => {
+                        const val = Boolean(checked)
+                        setFormData(prev => ({
+                          ...prev,
+                          isSingleModel: val,
+                          // Si se pasa a único modelo, limpiamos colores y stock por color
+                          colors: val ? [] : prev.colors,
+                          sizeColorStocks: val ? {} : prev.sizeColorStocks,
+                        }))
                       }}
-                      placeholder={loading ? "Loading sizes..." : "Select or create sizes"}
-                      loading={sizesLoading}
-                      multiple={true}
                     />
+                    <Label htmlFor="single-model">Único modelo (sin colores)</Label>
                   </div>
 
-                  <div>
-                    <Label>Available Colors</Label>
-                    <CreatableSelect
-                      options={colors.map(color => ({ id: color.id, name: color.name }))}
-                      value={formData.colors}
-                      onChange={(value) => setFormData({ ...formData, colors: value })}
-                      onCreateOption={async (name) => {
-                        await createColor({ name })
-                      }}
-                      placeholder={loading ? "Loading colors..." : "Select or create colors"}
-                      loading={colorsLoading}
-                      multiple={true}
-                    />
-                  </div>
+                  {/* Si NO es único modelo, primero colores */}
+                  {!formData.isSingleModel && (
+                    <div>
+                      <Label>Available Colors</Label>
+                      <CreatableSelect
+                        options={colors.map(color => ({ id: color.id, name: color.name }))}
+                        value={formData.colors}
+                        onChange={(value) => setFormData({ ...formData, colors: value })}
+                        onCreateOption={async (name) => {
+                          await createColor({ name })
+                        }}
+                        placeholder={loading ? "Loading colors..." : "Select or create colors"}
+                        loading={colorsLoading}
+                        multiple={true}
+                      />
+                    </div>
+                  )}
+
+                  {/* Si es único modelo: stock común por talle */}
+                  {formData.isSingleModel && (
+                    <div>
+                      <Label>Stock por talle</Label>
+                      <div className="grid grid-cols-5 gap-3">
+                        {["S","M","L","XL","XXL"].map((sz) => (
+                          <div key={sz} className="space-y-1">
+                            <Label htmlFor={`stock-${sz}`}>{sz}</Label>
+                            <Input
+                              id={`stock-${sz}`}
+                              type="number"
+                              value={String(formData.sizeStocks[sz] ?? 0)}
+                              onChange={(e) => setFormData({ ...formData, sizeStocks: { ...formData.sizeStocks, [sz]: Number(e.target.value) } })}
+                              min={0}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Si NO es único modelo: stock por color+talle */}
+                  {!formData.isSingleModel && (
+                    <div>
+                      <Label>Stock por talle y color</Label>
+                      {formData.colors.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Seleccioná colores para cargar stock por color+talle.</p>
+                      ) : (
+                        <div className="space-y-6">
+                          {formData.colors.map((colorName) => {
+                            const sizesToUse = ["S","M","L","XL","XXL"]
+                            const perColor = formData.sizeColorStocks[colorName] || {}
+                            return (
+                              <div key={colorName} className="space-y-2">
+                                <Label>{colorName}</Label>
+                                <div className="grid grid-cols-5 gap-3">
+                                  {sizesToUse.map((sz) => (
+                                    <div key={`${colorName}-${sz}`} className="space-y-1">
+                                      <Label htmlFor={`stock-${colorName}-${sz}`}>{sz}</Label>
+                                      <Input
+                                        id={`stock-${colorName}-${sz}`}
+                                        type="number"
+                                        value={String(perColor[sz] ?? 0)}
+                                        min={0}
+                                        onChange={(e) => {
+                                          const qty = Number(e.target.value)
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            sizeColorStocks: {
+                                              ...prev.sizeColorStocks,
+                                              [colorName]: {
+                                                ...prev.sizeColorStocks[colorName],
+                                                [sz]: qty,
+                                              },
+                                            },
+                                          }))
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

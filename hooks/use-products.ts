@@ -42,6 +42,8 @@ interface CreateProductInput {
   images?: string[]
   sizes?: string[]
   colors?: string[]
+  sizeStocks?: Record<string, number>
+  sizeColorStocks?: Record<string, Record<string, number>>
 }
 
 type CategoryWithCount = Category & { productCount?: number }

@@ -161,9 +161,14 @@ export async function GET(request: Request) {
           sizes: Array.from(new Set([ ...sizesFromTitle, ...sizesFromSku ])),
           colors: Array.from(new Set([ ...colorsFromTitle, ...colorsFromSku ])),
           inStock: productData.isActive && (productData.stock || 0) > 0,
-          featured: productData.isFeatured
+          featured: productData.isFeatured,
+          variants: (variants || []).map((v: any) => ({
+            title: v.title,
+            sku: v.sku,
+            inventoryQuantity: (v as any).inventoryQuantity ?? 0,
+          })),
         }
-
+        
         return NextResponse.json({
           success: true,
           data: formattedProduct,
@@ -379,7 +384,9 @@ export async function POST(request: Request) {
       isActive,
       images,
       sizes,
-      colors
+      colors,
+      sizeStocks,
+      sizeColorStocks,
     } = body
 
     // Validaciones básicas
@@ -455,34 +462,37 @@ export async function POST(request: Request) {
         await db.insert(productImages).values(imageInserts)
       }
 
-      // Crear variantes si hay tallas y colores
-      if (sizes && sizes.length > 0) {
-        const variants = []
-        const sizesToUse = sizes.length > 0 ? sizes : ['Talla Única']
-        const colorsToUse = colors && colors.length > 0 ? colors : ['Color Único']
+      // Crear variantes por talles y colores con stock por talle
+      const defaultSizes = ['S','M','L','XL','XXL']
+      const sizesToUse = Array.isArray(sizes) && sizes.length > 0 ? sizes : defaultSizes
+      const colorsToUse = Array.isArray(colors) && colors.length > 0 ? colors : ['Color Único']
 
-        for (const size of sizesToUse) {
-          for (const color of colorsToUse) {
-            const variantTitle = sizesToUse.length === 1 && colorsToUse.length === 1 
-              ? 'Variante por defecto'
-              : `${size} / ${color}`
-            
-            variants.push({
-              productId,
-              title: variantTitle,
-              price: price.toString(),
-              compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
-              sku: autoSKU ? `${autoSKU}-${size.toLowerCase()}-${color.toLowerCase()}` : null,
-              inventoryQuantity: 0,
-              position: variants.length,
-              isActive: true
-            })
-          }
-        }
+      const variants: any[] = []
+      for (const size of sizesToUse) {
+        for (const color of colorsToUse) {
+          const variantTitle = sizesToUse.length === 1 && colorsToUse.length === 1 
+            ? 'Variante por defecto'
+            : `${size} / ${color}`
 
-        if (variants.length > 0) {
-          await db.insert(productVariants).values(variants)
+          const inventoryForVariant = (sizeColorStocks && sizeColorStocks[color] && typeof sizeColorStocks[color][size] === 'number')
+            ? sizeColorStocks[color][size]
+            : ((sizeStocks && typeof sizeStocks[size] === 'number') ? sizeStocks[size] : 0)
+
+          variants.push({
+            productId,
+            title: variantTitle,
+            price: price.toString(),
+            compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
+            sku: autoSKU ? `${autoSKU}-${String(size).toLowerCase()}-${String(color).toLowerCase()}` : null,
+            inventoryQuantity: inventoryForVariant,
+            position: variants.length,
+            isActive: true
+          })
         }
+      }
+
+      if (variants.length > 0) {
+        await db.insert(productVariants).values(variants)
       }
 
       // Obtener el producto completo con imágenes

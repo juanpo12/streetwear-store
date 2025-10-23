@@ -48,13 +48,18 @@ export default function ProductPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const response = await fetch(`/api/products?id=${params.id}`)
+        const response = await fetch(`/api/products/${params.id}`)
         const data = await response.json()
         
         if (data.success && data.data) {
           setProduct(data.data)
-          setSelectedSize(data.data.sizes[0] || "")
-          setSelectedColor(data.data.colors[0] || "")
+          const variants = data.data.variants || []
+          const getSizeFromVariant = (v: any) => (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[0] : v.title
+          const getColorFromVariant = (v: any) => (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[1] : ''
+          const firstAvailableColor = (data.data.colors || []).find((c: string) => variants.some((v: any) => String(getColorFromVariant(v)).toLowerCase() === String(c).toLowerCase() && (v.inventoryQuantity || 0) > 0)) || (data.data.colors?.[0] || "")
+          const firstAvailableSizeForColor = (data.data.sizes || []).find((s: string) => variants.some((v: any) => String(getSizeFromVariant(v)).toLowerCase() === String(s).toLowerCase() && String(getColorFromVariant(v)).toLowerCase() === String(firstAvailableColor).toLowerCase() && (v.inventoryQuantity || 0) > 0)) || (data.data.sizes?.[0] || "")
+          setSelectedColor(firstAvailableColor)
+          setSelectedSize(firstAvailableSizeForColor)
         } else {
           setError(data.error || "Producto no encontrado")
         }
@@ -396,21 +401,30 @@ export default function ProductPage() {
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Selecciona tu talla</h3>
                 <div className="flex flex-wrap gap-3">
-                  {product.sizes.map((size) => (
-                    <Button
-                      key={size}
-                      variant={selectedSize === size ? "default" : "outline"}
-                      size="lg"
-                      onClick={() => setSelectedSize(size)}
-                      className={`min-w-[4rem] rounded-xl font-medium transition-all ${
-                        selectedSize === size 
-                          ? 'shadow-lg scale-105' 
-                          : 'hover:scale-105 hover:border-primary/50'
-                      }`}
-                    >
-                      {size}
-                    </Button>
-                  ))}
+                  {product.sizes.map((size) => {
+                    const variants = product.variants || []
+                    const hasStock = variants.some((v: any) => {
+                      const titleSize = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[0] : v.title
+                      const titleColor = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[1] : ''
+                      return String(titleSize).toLowerCase() === String(size).toLowerCase() && String(titleColor).toLowerCase() === String(selectedColor).toLowerCase() && (v.inventoryQuantity || 0) > 0
+                    })
+                    return (
+                      <Button
+                        key={size}
+                        variant={selectedSize === size ? "default" : "outline"}
+                        size="lg"
+                        onClick={() => hasStock && setSelectedSize(size)}
+                        disabled={!hasStock}
+                        className={`min-w-[4rem] rounded-xl font-medium transition-all ${
+                          selectedSize === size 
+                            ? 'shadow-lg scale-105' 
+                            : 'hover:scale-105 hover:border-primary/50'
+                        } ${!hasStock ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {size}
+                      </Button>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -420,21 +434,47 @@ export default function ProductPage() {
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Elige un color</h3>
                 <div className="flex flex-wrap gap-3">
-                  {product.colors.map((color) => (
-                    <Button
-                      key={color}
-                      variant={selectedColor === color ? "default" : "outline"}
-                      size="lg"
-                      onClick={() => setSelectedColor(color)}
-                      className={`rounded-xl font-medium transition-all ${
-                        selectedColor === color 
-                          ? 'shadow-lg scale-105' 
-                          : 'hover:scale-105 hover:border-primary/50'
-                      }`}
-                    >
-                      {color}
-                    </Button>
-                  ))}
+                  {product.colors.map((color) => {
+                    const variants = product.variants || []
+                    const hasStockColor = variants.some((v: any) => {
+                      const titleColor = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[1] : ''
+                      return String(titleColor).toLowerCase() === String(color).toLowerCase() && (v.inventoryQuantity || 0) > 0
+                    })
+                    return (
+                      <Button
+                        key={color}
+                        variant={selectedColor === color ? "default" : "outline"}
+                        size="lg"
+                        onClick={() => {
+                          if (!hasStockColor) return
+                          setSelectedColor(color)
+                          // Ajustar talla si la actual no tiene stock para el color elegido
+                          const variants = product.variants || []
+                          const currentHasStock = variants.some((v: any) => {
+                            const titleSize = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[0] : v.title
+                            const titleColor = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[1] : ''
+                            return String(titleSize).toLowerCase() === String(selectedSize).toLowerCase() && String(titleColor).toLowerCase() === String(color).toLowerCase() && (v.inventoryQuantity || 0) > 0
+                          })
+                          if (!currentHasStock) {
+                            const firstSizeForColor = (product.sizes || []).find((s: string) => variants.some((v: any) => {
+                              const titleSize = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[0] : v.title
+                              const titleColor = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[1] : ''
+                              return String(titleSize).toLowerCase() === String(s).toLowerCase() && String(titleColor).toLowerCase() === String(color).toLowerCase() && (v.inventoryQuantity || 0) > 0
+                            })) || selectedSize
+                            setSelectedSize(firstSizeForColor)
+                          }
+                        }}
+                        disabled={!hasStockColor}
+                        className={`rounded-xl font-medium transition-all ${
+                          selectedColor === color 
+                            ? 'shadow-lg scale-105' 
+                            : 'hover:scale-105 hover:border-primary/50'
+                        } ${!hasStockColor ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {color}
+                      </Button>
+                    )
+                  })}
                 </div>
               </div>
             )}
