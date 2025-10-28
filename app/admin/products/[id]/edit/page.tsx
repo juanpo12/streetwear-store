@@ -79,7 +79,7 @@ export default function EditProductPage() {
           description: p.description || "",
           shortDescription: p.shortDescription || "",
           price: String(p.priceNumeric ?? ""),
-          compareAtPrice: "",
+          compareAtPrice: String(p.compareAtPriceNumeric ?? ""),
           categoryId: catId,
           stock: typeof p.inStock === 'boolean' ? (p.inStock ? "1" : "0") : "",
           weight: "",
@@ -229,7 +229,7 @@ export default function EditProductPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="price">Price ($)</Label>
                       <Input
@@ -239,6 +239,17 @@ export default function EditProductPage() {
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="compareAtPrice">Precio anterior ($)</Label>
+                      <Input
+                        id="compareAtPrice"
+                        type="number"
+                        placeholder="Ej.: 99 (opcional)"
+                        value={formData.compareAtPrice}
+                        onChange={(e) => setFormData({ ...formData, compareAtPrice: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Si el producto tiene rebaja, el precio anterior debe ser mayor que el precio actual.</p>
                     </div>
                     <div>
                       <Label htmlFor="stock">Stock</Label>

@@ -66,6 +66,7 @@ export async function GET(
           name: products.name,
           description: products.description,
           price: products.price,
+          compareAtPrice: products.compareAtPrice,
           categoryName: categories.name,
           isActive: products.isActive,
           stock: products.stock,
@@ -102,6 +103,7 @@ export async function GET(
           id: productVariants.id,
           title: productVariants.title,
           price: productVariants.price,
+          compareAtPrice: productVariants.compareAtPrice,
           sku: productVariants.sku,
           inventoryQuantity: productVariants.inventoryQuantity,
           isActive: productVariants.isActive
@@ -140,13 +142,19 @@ export async function GET(
 
       const colors = normalizeUnique(colorsFromTitle as string[])
 
+      const priceNum = parseFloat(product.price)
+      const compareNum = product.compareAtPrice ? parseFloat(product.compareAtPrice) : null
+      const onSale = compareNum !== null && compareNum > priceNum
+
       // Formatear el producto final
       const finalProduct = {
         id: product.id,
         name: product.name,
         description: product.description,
-        price: formatPriceToARS(parseFloat(product.price)),
-        priceNumeric: parseFloat(product.price),
+        price: formatPriceToARS(priceNum),
+        priceNumeric: priceNum,
+        compareAtPrice: compareNum !== null ? formatPriceToARS(compareNum) : undefined,
+        compareAtPriceNumeric: compareNum !== null ? compareNum : undefined,
         image: imagesAll.length > 0 
           ? imagesAll[0].url
           : '/placeholder.svg',
@@ -156,7 +164,8 @@ export async function GET(
         colors: colors.length > 0 ? colors : ['Negro'],
         inStock: product.isActive && ((product.stock || 0) > 0 || variants.some(v => (v.inventoryQuantity || 0) > 0)),
         featured: product.isFeatured,
-        variants: variants
+        variants: variants,
+        onSale: onSale
       }
 
       return NextResponse.json({
@@ -333,6 +342,7 @@ export async function PUT(
         slug: products.slug,
         description: products.description,
         price: products.price,
+        compareAtPrice: products.compareAtPrice,
         categoryName: categories.name,
         isActive: products.isActive,
         isFeatured: products.isFeatured,
@@ -350,7 +360,20 @@ export async function PUT(
       .where(eq(productImages.productId, productId))
       .orderBy(productImages.position)
 
-    const finalProduct = { ...productResult[0], images: imagesAll }
+    const p = productResult[0]
+    const priceNum = parseFloat(p.price)
+    const compareNum = p.compareAtPrice ? parseFloat(p.compareAtPrice) : null
+    const onSale = compareNum !== null && compareNum > priceNum
+
+    const finalProduct = { 
+      ...p, 
+      images: imagesAll,
+      price: formatPriceToARS(priceNum),
+      priceNumeric: priceNum,
+      compareAtPrice: compareNum !== null ? formatPriceToARS(compareNum) : undefined,
+      compareAtPriceNumeric: compareNum !== null ? compareNum : undefined,
+      onSale: onSale,
+    }
 
     return NextResponse.json({ success: true, data: finalProduct, message: 'Producto actualizado exitosamente' }, { status: 200 })
   } catch (error) {

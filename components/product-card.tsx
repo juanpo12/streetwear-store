@@ -5,25 +5,27 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ShoppingBag, Heart, Eye, Star, TrendingUp } from "lucide-react"
+import { ShoppingBag, Heart, Eye, Star, TrendingUp, Tag } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useFavorites } from "@/components/favorites-provider"
 
 interface ProductCardProps {
   product: {
-    id: number
+    id: string | number
     name: string
-    price: number
+    price: string | number
     image: string
     category: string
     featured?: boolean
     inStock?: boolean
+    compareAtPrice?: string
+    onSale?: boolean
   }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites()
-  const isProductFavorite = isFavorite(product.id)
+  const isProductFavorite = isFavorite(Number(product.id))
   const [imageLoaded, setImageLoaded] = useState(false)
 
   const handleBuyClick = (e: React.MouseEvent) => {
@@ -35,11 +37,21 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation()
     
     if (isProductFavorite) {
-      removeFromFavorites(product.id)
+      removeFromFavorites(Number(product.id))
     } else {
-      addToFavorites(product)
+      // Normalizar para favoritos: precio numérico si es posible
+      const normalized = {
+        id: Number(product.id),
+        name: product.name,
+        price: typeof product.price === 'number' ? product.price : parseFloat(String(product.price).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
+        image: product.image,
+        category: product.category,
+      }
+      addToFavorites(normalized)
     }
   }
+
+  const formattedPrice = typeof product.price === 'number' ? `$${product.price}` : product.price
 
   return (
     <Link href={`/products/${product.id}`}>
@@ -71,6 +83,12 @@ export function ProductCard({ product }: ProductCardProps) {
               <Badge className="bg-primary/90 backdrop-blur-sm text-primary-foreground border-0 shadow-lg rounded-full px-3 py-1">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 Destacado
+              </Badge>
+            )}
+            {product.onSale && (
+              <Badge className="bg-amber-500/90 backdrop-blur-sm text-white border-0 shadow-lg rounded-full px-3 py-1">
+                <Tag className="h-3 w-3 mr-1" />
+                Oferta
               </Badge>
             )}
             {product.inStock === false && (
@@ -144,9 +162,16 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Price and Buy Button */}
           <div className="flex items-center justify-between pt-2">
             <div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                ${product.price}
-              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {formattedPrice}
+                </span>
+                {product.onSale && product.compareAtPrice && (
+                  <span className="text-sm text-muted-foreground line-through">
+                    {product.compareAtPrice}
+                  </span>
+                )}
+              </div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 Envío incluido
               </div>

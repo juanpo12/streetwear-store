@@ -213,6 +213,7 @@ export async function GET(request: Request) {
           name: products.name,
           description: products.description,
           price: products.price,
+          compareAtPrice: products.compareAtPrice,
           stock: products.stock,
           categoryName: categories.name,
           isActive: products.isActive,
@@ -275,12 +276,18 @@ export async function GET(request: Request) {
             return parts.length >= 1 ? parts[parts.length - 1] : null
           })
           .filter(Boolean)
+
+        const priceNum = parseFloat(product.price)
+        const compareNum = product.compareAtPrice ? parseFloat(product.compareAtPrice) : null
+        const onSale = compareNum !== null && compareNum > priceNum
         
         return {
           id: product.id,
           name: product.name,
-          price: formatPriceToARS(parseFloat(product.price)),
-          priceNumeric: parseFloat(product.price),
+          price: formatPriceToARS(priceNum),
+          priceNumeric: priceNum,
+          compareAtPrice: compareNum !== null ? formatPriceToARS(compareNum) : undefined,
+          compareAtPriceNumeric: compareNum !== null ? compareNum : undefined,
           stock: product.stock || 0,
           image: productImgs.length > 0 ? productImgs[0].url : '/placeholder.svg',
           category: product.categoryName || 'GENERAL',
@@ -288,7 +295,8 @@ export async function GET(request: Request) {
           sizes: Array.from(new Set([ ...sizesFromTitle, ...sizesFromSku ])),
           colors: Array.from(new Set([ ...colorsFromTitle, ...colorsFromSku ])),
           inStock: product.isActive,
-          featured: product.isFeatured
+          featured: product.isFeatured,
+          onSale: onSale
         }
       })
 
@@ -341,32 +349,6 @@ export async function POST(request: Request) {
     //   )
     // }
 
-    // Verificar que el usuario existe en nuestra base de datos usando Drizzle
-    // try {
-    //   const userResult = await db.select().from(users).limit(1)
-    //   if (!userResult.length) {
-    //     return NextResponse.json(
-    //       { success: false, error: 'Usuario no encontrado' },
-    //       { status: 401 }
-    //     )
-    //   }
-    // } catch (dbError) {
-    //   console.error('Database error during auth check:', dbError)
-    //   return NextResponse.json(
-    //     { success: false, error: 'Error de conexión a la base de datos' },
-    //     { status: 500 }
-    //   )
-    // }
-
-    // Verificar disponibilidad de base de datos
-    const dbAvailable = await isDatabaseAvailable()
-    if (!dbAvailable) {
-      return NextResponse.json({
-        success: false,
-        error: 'Base de datos no disponible'
-      }, { status: 503 })
-    }
-
     const body = await request.json()
     const {
       name,
@@ -389,154 +371,107 @@ export async function POST(request: Request) {
       sizeColorStocks,
     } = body
 
-    // Validaciones básicas
-    if (!name || !price) {
-      return NextResponse.json(
-        { success: false, error: 'Nombre y precio son requeridos' },
-        { status: 400 }
-      )
-    }
-
-    // Generar slug único
-    const slug = name.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-
-    // Generar SKU automáticamente basado en el nombre del producto
+    // Generador simple de SKU
     const generateSKU = (productName: string) => {
-      const prefix = productName.toUpperCase()
-        .replace(/[^A-Z0-9]/g, '')
-        .substring(0, 6)
+      const prefix = productName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6)
       const timestamp = Date.now().toString().slice(-6)
       return `${prefix}-${timestamp}`
     }
 
-    const autoSKU = generateSKU(name)
+    const baseSKU = generateSKU(name)
 
-    try {
-      // Crear el producto
-      const newProduct = await db
-        .insert(products)
-        .values({
-          name,
-          slug,
-          description,
-          shortDescription,
+    // Preparar slug
+    const slug = name
+      ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      : undefined
+
+    // Insertar producto principal
+    const inserted = await db
+      .insert(products)
+      .values({
+        name,
+        slug,
+        description,
+        shortDescription,
+        price: price.toString(),
+        compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
+        categoryId: categoryId || null,
+        stock: stock ?? 0,
+        weight: weight ? weight.toString() : null,
+        tags,
+        metaTitle,
+        metaDescription,
+        isFeatured: !!isFeatured,
+        isActive: isActive ?? true,
+      })
+      .returning({ id: products.id, name: products.name, slug: products.slug, price: products.price, compareAtPrice: products.compareAtPrice })
+
+    const productId = inserted[0].id
+
+    // Insertar imágenes
+    if (Array.isArray(images) && images.length > 0) {
+      const imageInserts = images.map((imageUrl: string, index: number) => ({
+        productId,
+        url: imageUrl,
+        altText: `${name} - Imagen ${index + 1}`,
+        position: index + 1,
+      }))
+      await db.insert(productImages).values(imageInserts)
+    }
+
+    // Construir variantes según talles y colores
+    const defaultSizes = ['S','M','L','XL','XXL']
+    const sizesToUse = Array.isArray(sizes) && sizes.length > 0 ? sizes : defaultSizes
+    const colorsToUse = Array.isArray(colors) && colors.length > 0 ? colors : ['Color Único']
+
+    const variants: any[] = []
+    for (const size of sizesToUse) {
+      for (const color of colorsToUse) {
+        const variantTitle = sizesToUse.length === 1 && colorsToUse.length === 1
+          ? 'Variante por defecto'
+          : `${size} / ${color}`
+
+        const inventoryForVariant = (sizeColorStocks && sizeColorStocks[color] && typeof sizeColorStocks[color][size] === 'number')
+          ? sizeColorStocks[color][size]
+          : ((sizeStocks && typeof sizeStocks[size] === 'number') ? sizeStocks[size] : 0)
+
+        variants.push({
+          productId,
+          title: variantTitle,
           price: price.toString(),
           compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
-          categoryId: categoryId || null,
-          sku: autoSKU,
-          stock: stock || 0,
-          weight: weight ? weight.toString() : null,
-          weightUnit: 'kg',
-          tags: tags || [],
-          metaTitle,
-          metaDescription,
-          isFeatured: isFeatured || false,
-          isActive: isActive !== false, // Por defecto true
-          trackQuantity: true,
-          continueSellingWhenOutOfStock: false,
-          requiresShipping: true,
+          sku: `${baseSKU}-${String(size).toLowerCase()}-${String(color).toLowerCase()}`,
+          inventoryQuantity: inventoryForVariant,
+          position: variants.length,
+          isActive: true,
         })
-        .returning({
-          id: products.id,
-          name: products.name,
-          slug: products.slug,
-          price: products.price,
-          isActive: products.isActive,
-          isFeatured: products.isFeatured,
-          createdAt: products.createdAt
-        })
-
-      const productId = newProduct[0].id
-
-      // Agregar imágenes si existen
-      if (images && images.length > 0) {
-        const imageInserts = images.map((imageUrl: string, index: number) => ({
-          productId,
-          url: imageUrl,
-          altText: `${name} - Imagen ${index + 1}`,
-          position: index + 1
-        }))
-
-        await db.insert(productImages).values(imageInserts)
       }
-
-      // Crear variantes por talles y colores con stock por talle
-      const defaultSizes = ['S','M','L','XL','XXL']
-      const sizesToUse = Array.isArray(sizes) && sizes.length > 0 ? sizes : defaultSizes
-      const colorsToUse = Array.isArray(colors) && colors.length > 0 ? colors : ['Color Único']
-
-      const variants: any[] = []
-      for (const size of sizesToUse) {
-        for (const color of colorsToUse) {
-          const variantTitle = sizesToUse.length === 1 && colorsToUse.length === 1 
-            ? 'Variante por defecto'
-            : `${size} / ${color}`
-
-          const inventoryForVariant = (sizeColorStocks && sizeColorStocks[color] && typeof sizeColorStocks[color][size] === 'number')
-            ? sizeColorStocks[color][size]
-            : ((sizeStocks && typeof sizeStocks[size] === 'number') ? sizeStocks[size] : 0)
-
-          variants.push({
-            productId,
-            title: variantTitle,
-            price: price.toString(),
-            compareAtPrice: compareAtPrice ? compareAtPrice.toString() : null,
-            sku: autoSKU ? `${autoSKU}-${String(size).toLowerCase()}-${String(color).toLowerCase()}` : null,
-            inventoryQuantity: inventoryForVariant,
-            position: variants.length,
-            isActive: true
-          })
-        }
-      }
-
-      if (variants.length > 0) {
-        await db.insert(productVariants).values(variants)
-      }
-
-      // Obtener el producto completo con imágenes
-      const createdProduct = await db
-        .select({
-          id: products.id,
-          name: products.name,
-          slug: products.slug,
-          description: products.description,
-          price: products.price,
-          categoryName: categories.name,
-          isActive: products.isActive,
-          isFeatured: products.isFeatured,
-          createdAt: products.createdAt
-        })
-        .from(products)
-        .leftJoin(categories, eq(products.categoryId, categories.id))
-        .where(eq(products.id, productId))
-        .limit(1)
-
-      const productImages_result = await db
-        .select()
-        .from(productImages)
-        .where(eq(productImages.productId, productId))
-
-      const finalProduct = {
-        ...createdProduct[0],
-        images: productImages_result
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: finalProduct,
-        message: 'Producto creado exitosamente'
-      }, { status: 201 })
-
-    } catch (dbError) {
-      console.error('Database error creating product:', dbError)
-      return NextResponse.json({
-        success: false,
-        error: 'Error al crear el producto en la base de datos',
-        details: dbError instanceof Error ? dbError.message : 'Unknown error'
-      }, { status: 500 })
     }
+
+    if (variants.length > 0) {
+      await db.insert(productVariants).values(variants)
+    }
+
+    // Calcular campos de precio y rebaja para la respuesta
+    const insertedProduct = inserted[0]
+    const priceNum = parseFloat(insertedProduct.price)
+    const compareNum = insertedProduct.compareAtPrice ? parseFloat(insertedProduct.compareAtPrice) : null
+    const onSale = compareNum !== null && compareNum > priceNum
+
+    // Responder con el producto creado incluyendo compareAtPrice y onSale
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: productId,
+        name: insertedProduct.name,
+        slug: insertedProduct.slug,
+        price: formatPriceToARS(priceNum),
+        priceNumeric: priceNum,
+        compareAtPrice: compareNum !== null ? formatPriceToARS(compareNum) : undefined,
+        compareAtPriceNumeric: compareNum !== null ? compareNum : undefined,
+        onSale: onSale,
+      }
+    }, { status: 201 })
 
   } catch (error) {
     console.error('Error creating product:', error)

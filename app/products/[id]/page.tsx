@@ -26,6 +26,9 @@ interface Product {
   inStock: boolean
   featured: boolean
   variants?: any[]
+  compareAtPrice?: string
+  compareAtPriceNumeric?: number
+  onSale?: boolean
 }
 
 export default function ProductPage() {
@@ -303,6 +306,11 @@ export default function ProductPage() {
                     ⭐ DESTACADO
                   </Badge>
                 )}
+                {product.onSale && (
+                  <Badge className="bg-amber-500 text-white shadow-lg backdrop-blur-sm rounded-full px-4 py-1.5">
+                    OFERTA
+                  </Badge>
+                )}
                 {!product.inStock && (
                   <Badge variant="destructive" className="shadow-lg backdrop-blur-sm rounded-full px-4 py-1.5">
                     AGOTADO
@@ -373,8 +381,15 @@ export default function ProductPage() {
             {/* Price & Stock */}
             <div className="flex items-center justify-between p-6 rounded-2xl bg-muted/30 border-2 border-muted">
               <div>
-                <div className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  {product.price}
+                <div className="flex items-baseline gap-2">
+                  <div className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    {product.price}
+                  </div>
+                  {product.onSale && product.compareAtPrice && (
+                    <div className="text-sm text-muted-foreground line-through">
+                      {product.compareAtPrice}
+                    </div>
+                  )}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
                   Impuestos incluidos

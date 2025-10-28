@@ -158,6 +158,17 @@ export default function NewProductPage() {
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="compareAtPrice">Precio anterior ($)</Label>
+                      <Input
+                        id="compareAtPrice"
+                        type="number"
+                        placeholder="Ej.: 99 (opcional)"
+                        value={formData.compareAtPrice}
+                        onChange={(e) => setFormData({ ...formData, compareAtPrice: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Si el producto tiene rebaja, el precio anterior debe ser mayor que el precio actual.</p>
+                    </div>
                     {/* Removed single stock input in favor of per-size stocks */}
                   </div>
 
@@ -168,7 +179,8 @@ export default function NewProductPage() {
                       value={formData.categoryId ? [categories.find(cat => cat.id === formData.categoryId)?.name || formData.categoryId] : []}
                       onChange={(value) => {
                         const selectedCategory = categories.find(cat => cat.name === value[0])
-                        setFormData({ ...formData, categoryId: selectedCategory?.id || value[0] || "" })
+                        // Solo guardar IDs válidos; si no existe, requerir crear la categoría
+                        setFormData({ ...formData, categoryId: selectedCategory?.id || "" })
                       }}
                       onCreateOption={async (name) => {
                         const newCategory = await createCategory({ name })

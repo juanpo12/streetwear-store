@@ -6,12 +6,15 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 
 interface Product {
-  id: number
+  id: string | number
   name: string
-  price: number
+  price: string | number
   image: string
   category: string
   featured?: boolean
+  inStock?: boolean
+  compareAtPrice?: string
+  onSale?: boolean
 }
 
 export function FeaturedProducts() {
