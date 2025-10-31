@@ -48,7 +48,7 @@ export interface CreatePreferenceData {
 
 export async function createPreference(data: CreatePreferenceData) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const idempotencyKey = generateIdempotencyKey(data.orderId);
 
     const preferenceData: any = {
