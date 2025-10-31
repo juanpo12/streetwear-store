@@ -1,12 +1,23 @@
 "use client"
 
+import { useState } from "react"
 import { useCart } from "./cart-provider"
 import { Button } from "@/components/ui/button"
 import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Tag, Package } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { CheckoutForm } from "./checkout/checkout-form"
 
 export function CartSidebar() {
   const { state, closeCart, updateQuantity, removeItem, totalPrice, totalItems } = useCart()
+  const [showCheckout, setShowCheckout] = useState(false)
+
+  const handleCheckout = () => {
+    setShowCheckout(true)
+  }
+
+  const handleBackToCart = () => {
+    setShowCheckout(false)
+  }
 
   if (!state.isOpen) return null
 
@@ -15,35 +26,41 @@ export function CartSidebar() {
       {/* Overlay */}
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity" 
-        onClick={closeCart} 
+        onClick={showCheckout ? handleBackToCart : closeCart} 
       />
 
       {/* Sidebar */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-background z-50 shadow-2xl animate-in slide-in-from-right duration-300">
+      <div className={`fixed right-0 top-0 h-full bg-background z-50 shadow-2xl animate-in slide-in-from-right duration-300 ${
+        showCheckout ? 'w-full max-w-6xl' : 'w-full max-w-md'
+      }`}>
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="relative p-6 border-b bg-gradient-to-r from-background to-muted/20">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-primary/10">
-                  <ShoppingBag className="h-5 w-5 text-primary" />
+          {showCheckout ? (
+            <CheckoutForm onBack={handleBackToCart} />
+          ) : (
+            <>
+              {/* Header */}
+              <div className="relative p-6 border-b bg-gradient-to-r from-background to-muted/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-primary/10">
+                      <ShoppingBag className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">Tu Carrito</h2>
+                      <p className="text-sm text-muted-foreground">
+                        {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={closeCart}
+                    className="rounded-full hover:bg-muted hover:rotate-90 transition-all duration-300"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold">Tu Carrito</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
-                  </p>
-                </div>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={closeCart}
-                className="rounded-full hover:bg-muted hover:rotate-90 transition-all duration-300"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
             
             {/* Progress bar
             {totalItems > 0 && (
@@ -203,6 +220,7 @@ export function CartSidebar() {
               <Button 
                 className="w-full h-14 text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 bg-gradient-to-r from-primary to-accent"
                 size="lg"
+                onClick={handleCheckout}
               >
                 FINALIZAR COMPRA
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -217,6 +235,8 @@ export function CartSidebar() {
                 Continuar comprando
               </Button>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

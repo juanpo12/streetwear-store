@@ -2,26 +2,22 @@ import { createPreference } from "@/lib/mercadopago";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { products, productVariants, productImages } from "@/lib/db/schema";
+import { products, productVariants, productImages, orders, orderItems } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { createClient } from "@/lib/supabase/server";
 
 // Zod schema for request validation
 const CreatePreferenceSchema = z.object({
-  items: z.array(z.object({
-    productId: z.string().uuid("ID de producto inválido"),
-    variantId: z.string().uuid("ID de variante inválido").optional(),
-    quantity: z.number().int().min(1, "La cantidad debe ser mayor a 0"),
-  })),
-  orderId: z.string().min(1, "ID de orden requerido"),
-  payer: z.object({
-    name: z.string().optional(),
-    surname: z.string().optional(),
-    email: z.string().email("Email inválido").optional(),
-    phone: z.object({
-      area_code: z.string().optional(),
-      number: z.string().optional(),
-    }).optional(),
-  }).optional(),
+  items: z.array(
+    z.object({
+      productId: z.string().uuid("ID de producto inválido"),
+      variantId: z.string().uuid("ID de variante inválido").optional(),
+      quantity: z.number().int().min(1, "La cantidad debe ser al menos 1"),
+    })
+  ).min(1, "Debe incluir al menos un producto"),
+  email: z.string().email("Email inválido"),
+  phone: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -40,7 +36,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { items, orderId, payer } = validationResult.data;
+    const { items, email, phone, notes } = validationResult.data;
+
+    // Get current user (optional)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     // Fetch product data from database for security
     const secureItems = [];
@@ -130,8 +130,8 @@ export async function POST(req: NextRequest) {
 
       // Create secure item with database data
       secureItems.push({
-        id: product.id,
-        name: product.name,
+        productId: product.id,
+        productTitle: product.name,
         price: finalPrice,
         image: image?.url || "/placeholder.jpg",
         quantity: item.quantity,
@@ -140,15 +140,74 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Create preference with secure data
-    const preferenceData = {
-      items: secureItems,
-      orderId,
-      payer,
-    };
+    // Calculate totals
+    const subtotalPrice = secureItems.reduce((total, item) => {
+      return total + (item.price * item.quantity)
+    }, 0)
 
-    const preference = await createPreference(preferenceData);
-    return NextResponse.json(preference);
+    const totalTax = 0 // No tax for now
+    const totalShipping = 0 // Free shipping for now
+    const totalPrice = subtotalPrice + totalTax + totalShipping
+
+    // Generate unique order number
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+
+    // Create order in database
+    const [createdOrder] = await db.insert(orders).values({
+      orderNumber,
+      userId: user?.id || null,
+      email,
+      phone: phone || null,
+      status: "pending",
+      paymentStatus: "pending",
+      fulfillmentStatus: "unfulfilled",
+      subtotalPrice: subtotalPrice.toString(),
+      totalTax: totalTax.toString(),
+      totalShipping: totalShipping.toString(),
+      totalPrice: totalPrice.toString(),
+      currency: "ARS",
+      notes: notes || null,
+    }).returning()
+
+    // Create order items
+    const orderItemsData = secureItems.map(item => ({
+      orderId: createdOrder.id,
+      productId: item.productId,
+      variantId: item.variantId || null,
+      quantity: item.quantity,
+      price: item.price.toString(),
+      totalPrice: (item.price * item.quantity).toString(),
+      productTitle: item.productTitle,
+      variantTitle: item.variantTitle || null,
+    }))
+
+    await db.insert(orderItems).values(orderItemsData)
+
+    // Prepare data for MercadoPago
+    const preferenceData = {
+      items: secureItems.map(item => ({
+        id: item.productId,
+        title: item.productTitle,
+        description: item.variantTitle || item.productTitle,
+        picture_url: item.image,
+        category_id: "fashion",
+        quantity: item.quantity,
+        currency_id: "ARS",
+        unit_price: item.price,
+      })),
+      orderId: createdOrder.id,
+    }
+
+    // Create MercadoPago preference
+    const preference = await createPreference(preferenceData)
+
+    return NextResponse.json({
+      id: preference.id,
+      init_point: preference.init_point,
+      sandbox_init_point: preference.sandbox_init_point,
+      orderId: createdOrder.id,
+      orderNumber: createdOrder.orderNumber,
+    })
     
   } catch (error) {
     console.error("Error creating preference:", error);
