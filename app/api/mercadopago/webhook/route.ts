@@ -13,31 +13,38 @@ export async function POST(req: NextRequest) {
     
     console.log('Webhook received:', JSON.stringify(body, null, 2))
     
-    // Validar estructura básica del webhook
-    if (!body || !body.data || !body.data.id) {
-      console.error('❌ Invalid webhook structure:', body)
-      return NextResponse.json(
-        { error: "Estructura de webhook inválida" },
-        { status: 400 }
-      );
+    // Manejar diferentes formatos de webhook de MercadoPago
+    let paymentId: number | null = null
+    
+    // Formato nuevo: { data: { id: "123" }, type: "payment" }
+    if (body.data && body.data.id && body.type === 'payment') {
+      paymentId = body.data.id
+      console.log('📧 Payment webhook format detected')
     }
-
-    // Verificar que es una notificación de pago
-    if (body.type !== 'payment') {
-      console.log('ℹ️ Non-payment webhook received, ignoring:', body.type)
+    // Formato alternativo: { resource: "url", topic: "merchant_order" }
+    else if (body.resource && body.topic === 'merchant_order') {
+      console.log('📧 Merchant order webhook format detected, ignoring for now')
+      return NextResponse.json({ received: true });
+    }
+    // Formato query params (fallback)
+    else {
+      const url = new URL(req.url)
+      const idParam = url.searchParams.get('id')
+      const topicParam = url.searchParams.get('topic')
+      
+      if (idParam && topicParam === 'payment') {
+        paymentId = parseInt(idParam)
+        console.log('📧 Query params webhook format detected')
+      }
+    }
+    
+    // Validar que tenemos un payment ID válido
+    if (!paymentId || typeof paymentId !== 'number') {
+      console.log('ℹ️ No valid payment ID found, webhook ignored')
       return NextResponse.json({ received: true });
     }
 
-    const paymentId = body.data.id
-
-    // Validar que el paymentId es válido
-    if (!paymentId || typeof paymentId !== 'number') {
-      console.error('❌ Invalid payment ID:', paymentId)
-      return NextResponse.json(
-        { error: "ID de pago inválido" },
-        { status: 400 }
-      );
-    }
+    console.log('🔍 Processing payment ID:', paymentId)
 
     // Obtener información del pago
     const paymentData = await payment.get({
