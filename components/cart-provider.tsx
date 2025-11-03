@@ -3,14 +3,18 @@
 import type React from "react"
 
 import { createContext, useContext, useReducer, type ReactNode } from "react"
+import { toast } from "@/hooks/use-toast"
 
 interface CartItem {
-  id: number
+  id: string
   name: string
   price: number
   image: string
   quantity: number
   size?: string
+  variantId?: string
+  stock?: number
+  allowOutOfStock?: boolean
 }
 
 interface CartState {
@@ -20,8 +24,8 @@ interface CartState {
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: Omit<CartItem, "quantity"> & { quantity?: number } }
-  | { type: "REMOVE_ITEM"; payload: number }
-  | { type: "UPDATE_QUANTITY"; payload: { id: number; quantity: number } }
+  | { type: "REMOVE_ITEM"; payload: string }
+  | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "CLEAR_CART" }
   | { type: "TOGGLE_CART" }
   | { type: "OPEN_CART" }
@@ -31,8 +35,8 @@ const CartContext = createContext<{
   state: CartState
   dispatch: React.Dispatch<CartAction>
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void
-  removeItem: (id: number) => void
-  updateQuantity: (id: number, quantity: number) => void
+  removeItem: (id: string) => void
+  updateQuantity: (id: string, quantity: number) => void
   clearCart: () => void
   toggleCart: () => void
   openCart: () => void
@@ -45,19 +49,45 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "ADD_ITEM": {
       const existingItem = state.items.find((item) => item.id === action.payload.id)
+      const requestedQuantity = action.payload.quantity || 1
+      
       if (existingItem) {
+        const newQuantity = existingItem.quantity + requestedQuantity
+        // Check stock if available
+        if (action.payload.stock !== undefined && !action.payload.allowOutOfStock && newQuantity > action.payload.stock) {
+          // Don't add more than available stock
+          toast({
+            title: "Stock insuficiente",
+            description: `Solo hay ${action.payload.stock} unidades disponibles de este producto.`,
+            variant: "destructive",
+          })
+          return state
+        }
+        
         return {
           ...state,
           items: state.items.map((item) =>
             item.id === action.payload.id
-              ? { ...item, quantity: item.quantity + (action.payload.quantity || 1) }
+              ? { ...item, quantity: newQuantity }
               : item,
           ),
         }
       }
+      
+      // Check stock for new item
+      if (action.payload.stock !== undefined && !action.payload.allowOutOfStock && requestedQuantity > action.payload.stock) {
+        // Don't add if exceeds stock
+        toast({
+          title: "Stock insuficiente",
+          description: `Solo hay ${action.payload.stock} unidades disponibles de este producto.`,
+          variant: "destructive",
+        })
+        return state
+      }
+      
       return {
         ...state,
-        items: [...state.items, { ...action.payload, quantity: action.payload.quantity || 1 }],
+        items: [...state.items, { ...action.payload, quantity: requestedQuantity }],
       }
     }
     case "REMOVE_ITEM":
@@ -69,7 +99,22 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return {
         ...state,
         items: state.items
-          .map((item) => (item.id === action.payload.id ? { ...item, quantity: action.payload.quantity } : item))
+          .map((item) => {
+            if (item.id === action.payload.id) {
+              // Check stock if available
+              if (item.stock !== undefined && !item.allowOutOfStock && action.payload.quantity > item.stock) {
+                // Don't update if exceeds stock
+                toast({
+                  title: "Stock insuficiente",
+                  description: `Solo hay ${item.stock} unidades disponibles de este producto.`,
+                  variant: "destructive",
+                })
+                return item
+              }
+              return { ...item, quantity: action.payload.quantity }
+            }
+            return item
+          })
           .filter((item) => item.quantity > 0),
       }
     case "CLEAR_CART":
@@ -107,11 +152,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "ADD_ITEM", payload: item })
   }
 
-  const removeItem = (id: number) => {
+  const removeItem = (id: string) => {
     dispatch({ type: "REMOVE_ITEM", payload: id })
   }
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: string, quantity: number) => {
     dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } })
   }
 

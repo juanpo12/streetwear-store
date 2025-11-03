@@ -11,6 +11,7 @@ import { SearchProvider } from "@/components/search-provider"
 import { SearchSidebar } from "@/components/search-sidebar"
 import { FavoritesProvider } from "@/components/favorites-provider"
 import { Navigation } from "@/components/navigation"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: "URBAN THREADS - Streetwear Store",
@@ -33,6 +34,7 @@ export default function RootLayout({
               <Suspense fallback={null}>{children}</Suspense>
               <CartSidebar />
               <SearchSidebar />
+              <Toaster />
               <Analytics />
             </FavoritesProvider>
           </CartProvider>

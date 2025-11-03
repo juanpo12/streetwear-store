@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useCart } from "./cart-provider"
 import { Button } from "@/components/ui/button"
-import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Tag, Package } from "lucide-react"
+import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Tag, Package, AlertTriangle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { CheckoutForm } from "./checkout/checkout-form"
 
@@ -162,11 +162,38 @@ export function CartSidebar() {
                             size="icon"
                             className="h-7 w-7 rounded-full hover:bg-background"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={
+                              item.stock !== undefined && 
+                              !item.allowOutOfStock && 
+                              item.quantity >= item.stock
+                            }
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
+
+                      {/* Stock Warning */}
+                      {item.stock !== undefined && (
+                        <div className="text-xs">
+                          {item.quantity > item.stock && !item.allowOutOfStock ? (
+                            <div className="flex items-center gap-1 text-red-600">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span>Sin stock disponible</span>
+                            </div>
+                          ) : item.stock <= 5 && item.stock > 0 ? (
+                            <div className="flex items-center gap-1 text-amber-600">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span>Últimas {item.stock} unidades</span>
+                            </div>
+                          ) : item.stock === 0 && item.allowOutOfStock ? (
+                            <div className="flex items-center gap-1 text-orange-600">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span>Sin stock - Se enviará cuando esté disponible</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
 
                       {/* Subtotal */}
                       <div className="text-xs text-muted-foreground">

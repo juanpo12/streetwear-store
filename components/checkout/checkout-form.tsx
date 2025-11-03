@@ -17,7 +17,7 @@ import { z } from "zod"
 const CheckoutSchema = z.object({
   email: z.string().email("Email inválido"),
   phone: z.string().min(10, "Teléfono debe tener al menos 10 dígitos").optional().or(z.literal("")),
-  notes: z.string().optional(),
+  discountCode: z.string().optional(),
 })
 
 type CheckoutFormData = z.infer<typeof CheckoutSchema>
@@ -36,7 +36,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
   const [formData, setFormData] = useState<CheckoutFormData>({
     email: "",
     phone: "",
-    notes: "",
+    discountCode: "",
   })
 
   // Pre-fill form with user data if logged in
@@ -81,7 +81,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
           items: cartItems,
           email: validatedData.email,
           phone: validatedData.phone || null,
-          notes: validatedData.notes || null,
+          discountCode: validatedData.discountCode || null,
         }),
       })
 
@@ -115,7 +115,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
   }
 
   const subtotal = totalPrice
-  const shipping = 0 // Free shipping for now
+  const shipping = 500 // Shipping cost
   const tax = 0 // No tax for now
   const total = subtotal + shipping + tax
 
@@ -184,18 +184,18 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
                   />
                 </div>
 
-                {/* Notes */}
+                {/* Discount Code */}
                 <div className="space-y-2">
-                  <Label htmlFor="notes" className="flex items-center gap-2">
+                  <Label htmlFor="discountCode" className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    Notas del pedido (opcional)
+                    Código de descuento (opcional)
                   </Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
-                    placeholder="Instrucciones especiales, comentarios..."
-                    rows={3}
+                  <Input
+                    id="discountCode"
+                    type="text"
+                    value={formData.discountCode}
+                    onChange={(e) => handleInputChange("discountCode", e.target.value)}
+                    placeholder="Ingresa tu código de descuento"
                     disabled={loading}
                   />
                 </div>
@@ -302,9 +302,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Envío</span>
-                  <span className="text-green-600 font-medium">
-                    {shipping === 0 ? "GRATIS" : `$${shipping.toFixed(2)}`}
-                  </span>
+                  <span>${shipping.toFixed(2)}</span>
                 </div>
                 {tax > 0 && (
                   <div className="flex justify-between text-sm">

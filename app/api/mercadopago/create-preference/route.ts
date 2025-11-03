@@ -11,13 +11,13 @@ const CreatePreferenceSchema = z.object({
   items: z.array(
     z.object({
       productId: z.string().uuid("ID de producto inválido"),
-      variantId: z.string().uuid("ID de variante inválido").optional(),
+      variantId: z.string().uuid("ID de variante inválido").nullable().optional(),
       quantity: z.number().int().min(1, "La cantidad debe ser al menos 1"),
     })
   ).min(1, "Debe incluir al menos un producto"),
   email: z.string().email("Email inválido"),
-  phone: z.string().optional(),
-  notes: z.string().optional(),
+  phone: z.string().nullable().optional(),
+  discountCode: z.string().nullable().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { items, email, phone, notes } = validationResult.data;
+    const { items, email, phone, discountCode } = validationResult.data;
 
     // Get current user (optional)
     const supabase = createClient()
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       let actualStock = product.stock;
 
       // If variant is specified, get variant data
-      if (item.variantId) {
+      if (item.variantId && item.variantId !== item.productId) {
         const variantQuery = db
           .select({
             id: productVariants.id,
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       totalShipping: totalShipping.toString(),
       totalPrice: totalPrice.toString(),
       currency: "ARS",
-      notes: notes || null,
+      notes: discountCode || null,
     }).returning()
 
     // Create order items
@@ -209,8 +209,27 @@ export async function POST(req: NextRequest) {
       orderNumber: createdOrder.orderNumber,
     })
     
-  } catch (error) {
+  } catch (error: any) {
+    // Log detallado
     console.error("Error creating preference:", error);
+
+    // Propagar información útil cuando viene desde MercadoPago
+    if (error && typeof error === 'object') {
+      const status = error.status || 500;
+      const message = error.message || 'Error interno del servidor';
+      const blocked_by = error.blocked_by;
+      const code = error.code;
+
+      return NextResponse.json(
+        {
+          error: message,
+          ...(blocked_by ? { blocked_by } : {}),
+          ...(code ? { code } : {}),
+        },
+        { status }
+      );
+    }
+
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

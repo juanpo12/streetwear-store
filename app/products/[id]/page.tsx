@@ -105,6 +105,9 @@ export default function ProductPage() {
       price: product.priceNumeric,
       image: product.image,
       size: selectedSize,
+      variantId: null, // No variant for simple products
+      stock: product.stock,
+      allowOutOfStock: false, // Don't allow out of stock purchases by default
     })
     
     setTimeout(() => {
