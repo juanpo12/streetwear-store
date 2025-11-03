@@ -20,20 +20,20 @@ function generateIdempotencyKey(orderId: string): string {
   return `pref_${orderId}_${timestamp}_${random}`;
 }
 
-export interface CartItem {
+// Los ítems deben venir en el formato esperado por MercadoPago
+export interface PreferenceItem {
   id: string;
-  name: string;
-  price: number;
-  image: string;
+  title: string;
+  description?: string;
   quantity: number;
-  variantId?: string;
-  variantTitle?: string;
-  size?: string;
-  color?: string;
+  unit_price: number;
+  currency_id?: string;
+  picture_url?: string;
+  category_id?: string;
 }
 
 export interface CreatePreferenceData {
-  items: CartItem[];
+  items: PreferenceItem[];
   orderId: string;
   payer?: {
     name?: string;
@@ -52,21 +52,16 @@ export async function createPreference(data: CreatePreferenceData) {
     const idempotencyKey = generateIdempotencyKey(data.orderId);
 
     const preferenceData: any = {
-      items: data.items.map((item) => ({
-        id: item.id,
-        title: item.name,
-        description: item.variantTitle 
-          ? `${item.name} - ${item.variantTitle}` 
-          : item.name,
-        quantity: item.quantity,
-        unit_price: item.price,
-        currency_id: "ARS",
-      })),
-      shipments: {
-        mode: "me2", // Activa Mercado Envíos
-        local_pickup: true, // Permitir "retiro en el local"
-        dimensions: "30x30x30,500"
-      },
+      items: data.items,
+      ...(process.env.MERCADOPAGO_ENABLE_SHIPMENTS === 'true'
+        ? {
+            shipments: {
+              mode: 'me2',
+              local_pickup: true,
+              dimensions: '30x30x30,500',
+            },
+          }
+        : {}),
       back_urls: {
         success: `${baseUrl}/orders/success`,
         failure: `${baseUrl}/orders/failure`,
@@ -76,8 +71,7 @@ export async function createPreference(data: CreatePreferenceData) {
       statement_descriptor: "ES INDUMENTARIA",
       external_reference: data.orderId,
       notification_url: `${baseUrl}/api/mercadopago/webhook`,
-      expires: false,
-      binary_mode: false,
+      // Campos avanzados removidos para evitar bloqueos del PolicyAgent.
     };
 
     // Solo agregar payer si se proporciona
