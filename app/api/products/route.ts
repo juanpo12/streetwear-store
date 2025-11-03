@@ -148,11 +148,33 @@ export async function GET(request: Request) {
           })
           .filter(Boolean)
 
+        // Calcular stock total considerando variantes
+        const variantsWithStock = (variants || []).map((v: any) => ({
+          id: v.id,
+          title: v.title,
+          sku: v.sku,
+          price: v.price,
+          compareAtPrice: v.compareAtPrice,
+          inventoryQuantity: v.inventoryQuantity ?? 0,
+          isActive: v.isActive ?? true,
+        }));
+
+        // Si hay variantes, usar el stock de las variantes activas; si no, usar el stock del producto
+        const totalStock = variantsWithStock.length > 0 
+          ? variantsWithStock.filter(v => v.isActive).reduce((sum, v) => sum + v.inventoryQuantity, 0)
+          : (productData.stock || 0);
+
         const formattedProduct = {
           id: productData.id,
           name: productData.name,
           price: formatPriceToARS(parseFloat(productData.price)),
           priceNumeric: parseFloat(productData.price),
+          compareAtPrice: variantsWithStock.length > 0 && variantsWithStock[0].compareAtPrice 
+            ? formatPriceToARS(parseFloat(variantsWithStock[0].compareAtPrice))
+            : null,
+          compareAtPriceNumeric: variantsWithStock.length > 0 && variantsWithStock[0].compareAtPrice 
+            ? parseFloat(variantsWithStock[0].compareAtPrice)
+            : null,
           stock: productData.stock || 0,
           image: images.length > 0 ? images[0].url : '/placeholder.svg',
           images: images.map(img => ({ url: img.url, altText: img.altText })),
@@ -160,13 +182,12 @@ export async function GET(request: Request) {
           description: productData.description || '',
           sizes: Array.from(new Set([ ...sizesFromTitle, ...sizesFromSku ])),
           colors: Array.from(new Set([ ...colorsFromTitle, ...colorsFromSku ])),
-          inStock: productData.isActive && (productData.stock || 0) > 0,
+          inStock: productData.isActive && totalStock > 0,
           featured: productData.isFeatured,
-          variants: (variants || []).map((v: any) => ({
-            title: v.title,
-            sku: v.sku,
-            inventoryQuantity: (v as any).inventoryQuantity ?? 0,
-          })),
+          variants: variantsWithStock,
+          onSale: variantsWithStock.length > 0 && variantsWithStock[0].compareAtPrice 
+            ? parseFloat(variantsWithStock[0].compareAtPrice) > parseFloat(productData.price)
+            : false,
         }
         
         return NextResponse.json({

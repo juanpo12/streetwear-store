@@ -144,6 +144,7 @@ export async function POST(req: NextRequest) {
                     } else {
                       // Producto sin variante (talle único)
                       console.log(`📦 Reducing product stock: ${item.productTitle} x${item.quantity}`)
+                      console.log(`📦 Product ID: ${item.productId}`)
                       
                       // Verificar stock actual antes de reducir
                       const [currentProduct] = await db
@@ -156,13 +157,15 @@ export async function POST(req: NextRequest) {
                         throw new Error(`Product not found: ${item.productId}`)
                       }
 
+                      console.log(`📦 Current stock BEFORE reduction: ${currentProduct.stock}`)
+
                       if (currentProduct.stock < item.quantity) {
                         console.warn(`⚠️ Insufficient stock for product ${item.productTitle}. Available: ${currentProduct.stock}, Required: ${item.quantity}`)
                         stockErrors.push(`Insufficient stock for ${item.productTitle}`)
                         // Continuar con la reducción aunque sea negativo (para tracking)
                       }
                       
-                      await db
+                      const updateResult = await db
                         .update(products)
                         .set({
                           stock: sql`${products.stock} - ${item.quantity}`,
@@ -170,6 +173,16 @@ export async function POST(req: NextRequest) {
                         })
                         .where(eq(products.id, item.productId))
 
+                      console.log(`📦 Update result:`, updateResult)
+
+                      // Verificar stock después de la actualización
+                      const [updatedProduct] = await db
+                        .select({ stock: products.stock })
+                        .from(products)
+                        .where(eq(products.id, item.productId))
+                        .limit(1)
+
+                      console.log(`📦 Current stock AFTER reduction: ${updatedProduct?.stock}`)
                       console.log(`✅ Product stock reduced for: ${item.productTitle}`)
                     }
                   } catch (stockError) {

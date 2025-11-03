@@ -12,6 +12,7 @@ interface CartItem {
   image: string
   quantity: number
   size?: string
+  color?: string
   variantId?: string
   stock?: number
   allowOutOfStock?: boolean

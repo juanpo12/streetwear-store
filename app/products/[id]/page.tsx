@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card"
 import { ArrowLeft, ShoppingBag, Heart, Share2, Facebook, Twitter, MessageCircle, Copy, X, Star, Truck, Shield, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
 import { useFavorites } from "@/components/favorites-provider"
+import { toast } from "@/hooks/use-toast"
 
 interface Product {
   id: string
@@ -98,6 +99,30 @@ export default function ProductPage() {
   const handleAddToCart = () => {
     if (!product) return
     
+    // Encontrar la variante específica seleccionada
+    const variants = product.variants || []
+    const selectedVariant = variants.find((v: any) => {
+      const titleSize = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[0] : v.title
+      const titleColor = (v.title && v.title.includes(' / ')) ? v.title.split(' / ')[1] : ''
+      return String(titleSize).toLowerCase() === String(selectedSize).toLowerCase() && 
+             String(titleColor).toLowerCase() === String(selectedColor).toLowerCase()
+    })
+    
+    // Determinar el stock disponible
+    const availableStock = selectedVariant 
+      ? selectedVariant.inventoryQuantity || 0
+      : product.stock || 0
+    
+    // Verificar si hay stock disponible
+    if (availableStock <= 0) {
+      toast({
+        title: "Sin stock disponible",
+        description: `La talla ${selectedSize}${selectedColor ? ` en color ${selectedColor}` : ''} no está disponible en este momento.`,
+        variant: "destructive",
+      })
+      return
+    }
+    
     setIsAddingToCart(true)
     addItem({
       id: product.id,
@@ -105,9 +130,10 @@ export default function ProductPage() {
       price: product.priceNumeric,
       image: product.image,
       size: selectedSize,
-      variantId: null, // No variant for simple products
-      stock: product.stock,
-      allowOutOfStock: false, // Don't allow out of stock purchases by default
+      color: selectedColor,
+      variantId: selectedVariant?.id || null,
+      stock: availableStock,
+      allowOutOfStock: false,
     })
     
     setTimeout(() => {
