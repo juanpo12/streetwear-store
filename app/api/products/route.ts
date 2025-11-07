@@ -301,6 +301,21 @@ export async function GET(request: Request) {
         const priceNum = parseFloat(product.price)
         const compareNum = product.compareAtPrice ? parseFloat(product.compareAtPrice) : null
         const onSale = compareNum !== null && compareNum > priceNum
+
+        // Calcular stock total considerando variantes activas
+        const variantsWithStock = (productVars || []).map((v: any) => ({
+          id: v.id,
+          title: v.title,
+          sku: v.sku,
+          price: v.price,
+          compareAtPrice: v.compareAtPrice,
+          inventoryQuantity: v.inventoryQuantity ?? 0,
+          isActive: v.isActive ?? true,
+        }))
+
+        const totalStock = variantsWithStock.length > 0
+          ? variantsWithStock.filter(v => v.isActive).reduce((sum, v) => sum + v.inventoryQuantity, 0)
+          : (product.stock || 0)
         
         return {
           id: product.id,
@@ -315,7 +330,7 @@ export async function GET(request: Request) {
           description: product.description || '',
           sizes: Array.from(new Set([ ...sizesFromTitle, ...sizesFromSku ])),
           colors: Array.from(new Set([ ...colorsFromTitle, ...colorsFromSku ])),
-          inStock: product.isActive,
+          inStock: product.isActive && totalStock > 0,
           featured: product.isFeatured,
           onSale: onSale
         }
