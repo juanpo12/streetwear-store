@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast"
 
 interface CartItem {
   id: string
+  productId?: string
   name: string
   price: number
   image: string

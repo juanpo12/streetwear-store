@@ -120,6 +120,14 @@ export function CartSidebar() {
                           {item.size}
                         </Badge>
                       )}
+                      {item.color && (
+                        <Badge 
+                          variant="secondary" 
+                          className="absolute bottom-1 right-1 text-xs px-1.5 py-0.5"
+                        >
+                          {item.color}
+                        </Badge>
+                      )}
                     </div>
 
                     {/* Product Details */}

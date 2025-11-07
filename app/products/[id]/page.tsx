@@ -124,8 +124,10 @@ export default function ProductPage() {
     }
     
     setIsAddingToCart(true)
+    const lineId = selectedVariant?.id ? `${product.id}:${selectedVariant.id}` : product.id
     addItem({
-      id: product.id,
+      id: lineId,
+      productId: product.id,
       name: product.name,
       price: product.priceNumeric,
       image: product.image,

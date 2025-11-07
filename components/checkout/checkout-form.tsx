@@ -66,7 +66,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
 
       // Prepare cart items for the secure endpoint
       const cartItems = state.items.map(item => ({
-        productId: item.id.toString(), // Convert to string as expected by the endpoint
+        productId: (item.productId ?? item.id).toString(), // ensure we send real product id
         variantId: item.variantId || null,
         quantity: item.quantity,
       }))
