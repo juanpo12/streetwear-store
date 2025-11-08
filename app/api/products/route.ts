@@ -216,16 +216,7 @@ export async function GET(request: Request) {
         conditions.push(sql`${products.categoryId} IS NULL`)
       }
 
-      if (excludeOutOfStock) {
-        conditions.push(sql`${products.stock} > 0`)
-      }
-
-      if (lowStock) {
-        const threshold = Number.parseInt(lowStock, 10)
-        if (Number.isFinite(threshold)) {
-          conditions.push(sql`${products.stock} <= ${threshold}`)
-        }
-      }
+      // Nota: filtros de stock se aplican luego de obtener variantes
 
       // Ejecutar query con condiciones
       const productsData = await db
@@ -324,7 +315,8 @@ export async function GET(request: Request) {
           priceNumeric: priceNum,
           compareAtPrice: compareNum !== null ? formatPriceToARS(compareNum) : undefined,
           compareAtPriceNumeric: compareNum !== null ? compareNum : undefined,
-          stock: product.stock || 0,
+          // stock total considerando variantes activas; si no hay variantes, usar stock del producto
+          stock: totalStock,
           image: productImgs.length > 0 ? productImgs[0].url : '/placeholder.svg',
           category: product.categoryName || 'GENERAL',
           description: product.description || '',
@@ -336,8 +328,19 @@ export async function GET(request: Request) {
         }
       })
 
-      // Aplicar límite si se especifica
+      // Aplicar filtros por stock basados en variantes
       let finalProducts = formattedProducts
+      if (excludeOutOfStock) {
+        finalProducts = finalProducts.filter(p => p.inStock)
+      }
+      if (lowStock) {
+        const threshold = Number.parseInt(lowStock, 10)
+        if (Number.isFinite(threshold)) {
+          finalProducts = finalProducts.filter(p => p.stock <= threshold)
+        }
+      }
+
+      // Aplicar límite si se especifica
       if (limit) {
         const limitNum = parseInt(limit)
         if (!isNaN(limitNum)) {
