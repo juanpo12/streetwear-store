@@ -1,100 +1,61 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Download, Eye, Package } from "lucide-react"
+import { Search, Download, Eye, Package, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
-
-// Mock data - Replace with actual API call
-const mockOrders = [
-  {
-    id: "ORD-001",
-    customer: "Alex Johnson",
-    email: "alex@example.com",
-    total: 89.99,
-    status: "completed",
-    items: 2,
-    date: "2024-01-15",
-    shippingAddress: "123 Main St, New York, NY 10001",
-  },
-  {
-    id: "ORD-002",
-    customer: "Sarah Chen",
-    email: "sarah@example.com",
-    total: 159.98,
-    status: "processing",
-    items: 3,
-    date: "2024-01-14",
-    shippingAddress: "456 Oak Ave, Los Angeles, CA 90210",
-  },
-  {
-    id: "ORD-003",
-    customer: "Mike Rodriguez",
-    email: "mike@example.com",
-    total: 249.97,
-    status: "shipped",
-    items: 4,
-    date: "2024-01-13",
-    shippingAddress: "789 Pine St, Chicago, IL 60601",
-  },
-  {
-    id: "ORD-004",
-    customer: "Emma Wilson",
-    email: "emma@example.com",
-    total: 79.99,
-    status: "pending",
-    items: 1,
-    date: "2024-01-12",
-    shippingAddress: "321 Elm St, Miami, FL 33101",
-  },
-  {
-    id: "ORD-005",
-    customer: "David Kim",
-    email: "david@example.com",
-    total: 199.98,
-    status: "completed",
-    items: 3,
-    date: "2024-01-11",
-    shippingAddress: "654 Maple Dr, Seattle, WA 98101",
-  },
-]
+import { useAdminOrders } from "@/hooks/use-admin-orders"
+import { useAdmin } from "@/hooks/use-admin"
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case "completed":
-      return "bg-green-100 text-green-800 hover:bg-green-100"
-    case "processing":
-      return "bg-blue-100 text-blue-800 hover:bg-blue-100"
+  const s = status.toLowerCase()
+  switch (s) {
+    case "delivered":
+      return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
     case "shipped":
-      return "bg-purple-100 text-purple-800 hover:bg-purple-100"
+      return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20"
+    case "confirmed":
+      return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20"
     case "pending":
-      return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
+      return "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20"
+    case "cancelled":
+      return "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20"
     default:
-      return "bg-gray-100 text-gray-800 hover:bg-gray-100"
+      return "bg-muted text-muted-foreground"
   }
 }
 
 export default function OrdersPage() {
+  const { isAdmin, adminLoading } = useAdmin()
+  const { orders, loading, error, updateOrderStatus, refresh } = useAdminOrders()
+  const isLoading = adminLoading || loading
+
+  const handleStatusChange = async (orderId: string, status: string) => {
+    await updateOrderStatus(orderId, { status })
+  }
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-streetwear-lg">ORDERS MANAGEMENT</h1>
-            <p className="text-muted-foreground">Track and manage customer orders</p>
+            <h1 className="text-streetwear-lg">Gestión de Órdenes</h1>
+            <p className="text-muted-foreground">Seguimiento y actualización del estado de pedidos</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline">
               <Download className="h-4 w-4 mr-2" />
-              EXPORT
+              Exportar
             </Button>
             <Button asChild>
               <Link href="/admin">
                 <Package className="h-4 w-4 mr-2" />
-                DASHBOARD
+                Panel
               </Link>
             </Button>
           </div>
@@ -104,41 +65,45 @@ export default function OrdersPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+              <CardTitle className="text-sm font-medium">Órdenes Totales</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">156</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <div className="text-2xl font-bold">{orders.length}</div>
+              <p className="text-xs text-muted-foreground">Últimas registradas</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+              <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">23</div>
-              <p className="text-xs text-muted-foreground">Need attention</p>
+              <div className="text-2xl font-bold">{orders.filter(o => o.status === 'pending').length}</div>
+              <p className="text-xs text-muted-foreground">Requieren acción</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">Ingresos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$12,450</div>
-              <p className="text-xs text-muted-foreground">This month</p>
+              <div className="text-2xl font-bold">
+                ${orders.reduce((acc, o) => acc + Number(o.totalPrice || 0), 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">Total listado</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
+              <CardTitle className="text-sm font-medium">Promedio por Orden</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$79.81</div>
-              <p className="text-xs text-muted-foreground">+5% from last month</p>
+              <div className="text-2xl font-bold">
+                ${orders.length ? Math.round((orders.reduce((acc, o) => acc + Number(o.totalPrice || 0), 0) / orders.length) * 100) / 100 : 0}
+              </div>
+              <p className="text-xs text-muted-foreground">Estimación</p>
             </CardContent>
           </Card>
         </div>
@@ -150,30 +115,31 @@ export default function OrdersPage() {
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search orders by ID, customer name, or email..." className="pl-10" />
+                  <Input placeholder="Buscar por ID de orden, cliente o email..." className="pl-10" />
                 </div>
               </div>
               <Select>
                 <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="confirmed">Confirmado</SelectItem>
+                  <SelectItem value="shipped">Enviado</SelectItem>
+                  <SelectItem value="delivered">Entregado</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
               <Select>
                 <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Date Range" />
+                  <SelectValue placeholder="Rango de fechas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="quarter">This Quarter</SelectItem>
+                  <SelectItem value="today">Hoy</SelectItem>
+                  <SelectItem value="week">Esta semana</SelectItem>
+                  <SelectItem value="month">Este mes</SelectItem>
+                  <SelectItem value="quarter">Este trimestre</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -183,41 +149,73 @@ export default function OrdersPage() {
         {/* Orders Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Órdenes recientes</CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => refresh()}>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Refrescar
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
+            {error && <div className="mb-4 text-red-600 text-sm">{error}</div>}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
+              </div>
+            ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Customer</TableHead>
+                  <TableHead>Orden</TableHead>
+                  <TableHead>Cliente</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockOrders.map((order) => (
+                {orders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
+                    <TableCell className="font-medium">{order.orderNumber}</TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{order.customer}</div>
+                        <div className="font-medium">{order.customerName || "—"}</div>
                         <div className="text-sm text-muted-foreground">{order.email}</div>
                       </div>
                     </TableCell>
-                    <TableCell>{order.items} items</TableCell>
-                    <TableCell>${order.total}</TableCell>
+                    <TableCell>{order.itemsCount} items</TableCell>
+                    <TableCell>${Number(order.totalPrice)}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(order.status)}>{order.status.toUpperCase()}</Badge>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className={getStatusColor(order.status)}>
+                          {order.status.toUpperCase()}
+                        </Badge>
+                        <Select onValueChange={(v) => handleStatusChange(order.id, v)}>
+                          <SelectTrigger className="w-[160px]">
+                            <SelectValue placeholder="Cambiar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendiente</SelectItem>
+                            <SelectItem value="confirmed">Confirmado</SelectItem>
+                            <SelectItem value="shipped">Enviado</SelectItem>
+                            <SelectItem value="delivered">Entregado</SelectItem>
+                            <SelectItem value="cancelled">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
-                    <TableCell>{order.date}</TableCell>
+                    <TableCell>{new Date(order.createdAt).toLocaleDateString("es-ES")}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
-                          <Eye className="h-4 w-4" />
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/orders/${order.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
                         </Button>
                       </div>
                     </TableCell>
@@ -225,6 +223,7 @@ export default function OrdersPage() {
                 ))}
               </TableBody>
             </Table>
+            )}
           </CardContent>
         </Card>
       </div>
