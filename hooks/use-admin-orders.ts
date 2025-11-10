@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useAdmin } from "./use-admin"
 
 export interface AdminOrderListItem {
@@ -21,14 +21,16 @@ export function useAdminOrders() {
   const [orders, setOrders] = useState<AdminOrderListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const hasFetchedRef = useRef(false)
 
-  const fetchOrders = async () => {
-    if (adminLoading) return
+  const fetchOrders = async (force = false) => {
+    if (adminLoading && !force) return
     if (!isAdmin) {
       setOrders([])
       setLoading(false)
       return
     }
+    if (hasFetchedRef.current && !force) return
     setLoading(true)
     setError(null)
     try {
@@ -38,6 +40,7 @@ export function useAdminOrders() {
         throw new Error(json?.error || `Error ${res.status}`)
       }
       setOrders(json.data || [])
+      hasFetchedRef.current = true
     } catch (e: any) {
       setError(e.message || "Error cargando órdenes")
     } finally {
@@ -46,9 +49,11 @@ export function useAdminOrders() {
   }
 
   useEffect(() => {
-    fetchOrders()
+    if (isAdmin) {
+      fetchOrders(false)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminLoading, isAdmin])
+  }, [isAdmin])
 
   const updateOrderStatus = async (
     orderId: string,
@@ -73,5 +78,5 @@ export function useAdminOrders() {
     }
   }
 
-  return { orders, loading, error, refresh: fetchOrders, updateOrderStatus }
+  return { orders, loading, error, refresh: () => fetchOrders(true), updateOrderStatus }
 }
