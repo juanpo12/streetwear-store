@@ -1,145 +1,66 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Package, Truck, CheckCircle2, Clock, MapPin } from "lucide-react"
 import Link from "next/link"
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { useUserOrders } from "@/hooks/use-user-orders"
 
-interface OrderItem {
-  id: number
-  name: string
-  price: number
-  quantity: number
-  image: string
-  size: string
-}
-
-type OrderStatus = "pending" | "processing" | "shipped" | "delivered"
-
-interface Order {
-  id: string
-  date: string
-  total: number
-  status: OrderStatus
-  estimatedDelivery: string
-  trackingNumber?: string
-  items: OrderItem[]
-  shippingAddress: string
-}
-
-// Mock data - esto se conectará con Supabase más adelante
-const mockOrders: Order[] = [
-  {
-    id: "ORD-2024-003",
-    date: "2024-01-20",
-    total: 135,
-    status: "shipped",
-    estimatedDelivery: "2024-01-25",
-    trackingNumber: "TRK123456789",
-    shippingAddress: "Av. Corrientes 1234, CABA, Argentina",
-    items: [
-      {
-        id: 1,
-        name: "GRAPHIC TEE",
-        price: 45,
-        quantity: 1,
-        image: "/graphic-t-shirt-streetwear-urban.jpg",
-        size: "L",
-      },
-      {
-        id: 2,
-        name: "BOMBER JACKET",
-        price: 90,
-        quantity: 1,
-        image: "/bomber-jacket-streetwear.jpg",
-        size: "M",
-      },
-    ],
-  },
-  {
-    id: "ORD-2024-004",
-    date: "2024-01-22",
-    total: 75,
-    status: "processing",
-    estimatedDelivery: "2024-01-28",
-    shippingAddress: "Av. Santa Fe 5678, CABA, Argentina",
-    items: [
-      {
-        id: 3,
-        name: "WIDE LEG JEANS",
-        price: 75,
-        quantity: 1,
-        image: "/wide-leg-jeans-streetwear.jpg",
-        size: "30",
-      },
-    ],
-  },
-]
+type UiOrderStatus = "pending" | "processing" | "shipped" | "delivered"
 
 export default function OrderStatusPage() {
-  const [orders] = useState<Order[]>(mockOrders)
+  const { orders, loading, error } = useUserOrders()
 
-  const getStatusInfo = (status: OrderStatus) => {
-    switch (status) {
-      case "pending":
-        return {
-          color: "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20",
-          text: "Pendiente",
-          icon: Clock,
-        }
-      case "processing":
-        return {
-          color: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
-          text: "Procesando",
-          icon: Package,
-        }
-      case "shipped":
-        return {
-          color: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20",
-          text: "En Camino",
-          icon: Truck,
-        }
-      case "delivered":
-        return {
-          color: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
-          text: "Entregado",
-          icon: CheckCircle2,
-        }
+  const getStatusInfo = (status: string) => {
+    const normalized = status.toLowerCase()
+    const map: Record<string, { color: string; text: string; icon: any; uiStatus: UiOrderStatus }> = {
+      pending: { color: "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20", text: "Pendiente", icon: Clock, uiStatus: "pending" },
+      confirmed: { color: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20", text: "Procesando", icon: Package, uiStatus: "processing" },
+      processing: { color: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20", text: "Procesando", icon: Package, uiStatus: "processing" },
+      shipped: { color: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20", text: "En Camino", icon: Truck, uiStatus: "shipped" },
+      delivered: { color: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20", text: "Entregado", icon: CheckCircle2, uiStatus: "delivered" },
+      cancelled: { color: "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20", text: "Cancelado", icon: Clock, uiStatus: "pending" },
     }
+    return map[normalized] || map["pending"]
   }
 
-  const getProgressPercentage = (status: OrderStatus) => {
-    switch (status) {
-      case "pending":
-        return 25
-      case "processing":
-        return 50
-      case "shipped":
-        return 75
-      case "delivered":
-        return 100
+  const getProgressPercentage = (uiStatus: UiOrderStatus) => {
+    switch (uiStatus) {
+      case "pending": return 25
+      case "processing": return 50
+      case "shipped": return 75
+      case "delivered": return 100
     }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-12">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Package className="h-8 w-8 text-accent" />
             <h1 className="text-4xl font-bold tracking-tight">Estado de Pedidos</h1>
           </div>
           <p className="text-muted-foreground">
-            {orders.length === 0
+            {loading ? "Cargando tus pedidos…" : orders.length === 0
               ? "No tienes pedidos activos"
               : `Tienes ${orders.length} ${orders.length === 1 ? "pedido activo" : "pedidos activos"}`}
           </p>
         </div>
 
-        {orders.length === 0 ? (
+        {error && (
+          <div className="mb-6 text-red-600 text-sm">{error}</div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-accent" />
+          </div>
+        ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Package className="h-24 w-24 text-muted-foreground/20 mb-6" />
             <h2 className="text-2xl font-semibold mb-2">No hay pedidos activos</h2>
@@ -155,17 +76,25 @@ export default function OrderStatusPage() {
             {orders.map((order) => {
               const statusInfo = getStatusInfo(order.status)
               const StatusIcon = statusInfo.icon
-              const progress = getProgressPercentage(order.status)
+              const progress = getProgressPercentage(statusInfo.uiStatus)
+              const created = new Date(order.createdAt)
+              const total = Number(order.totalPrice)
+              const shippingAddress = order.addresses?.find?.(a => a.type === 'shipping')
+              const shippingText = shippingAddress
+                ? [shippingAddress.address1, shippingAddress.address2, shippingAddress.city, shippingAddress.province, shippingAddress.country, shippingAddress.zip]
+                    .filter(Boolean)
+                    .join(', ')
+                : '—'
 
               return (
                 <Card key={order.id} className="overflow-hidden">
                   <CardHeader className="bg-muted/50 border-b">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="space-y-1">
-                        <CardTitle className="text-lg">Orden {order.id}</CardTitle>
+                        <CardTitle className="text-lg">Orden {order.orderNumber}</CardTitle>
                         <div className="text-sm text-muted-foreground">
                           Pedido el{" "}
-                          {new Date(order.date).toLocaleDateString("es-ES", {
+                          {created.toLocaleDateString("es-ES", {
                             year: "numeric",
                             month: "long",
                             day: "numeric",
@@ -235,33 +164,6 @@ export default function OrderStatusPage() {
                       </div>
                     </div>
 
-                    {/* Delivery Info */}
-                    <div className="grid sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-                      <div>
-                        <div className="text-sm font-medium mb-1">Entrega Estimada</div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(order.estimatedDelivery).toLocaleDateString("es-ES", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </div>
-                      </div>
-                      {order.trackingNumber && (
-                        <div>
-                          <div className="text-sm font-medium mb-1">Número de Seguimiento</div>
-                          <div className="text-sm text-muted-foreground font-mono">{order.trackingNumber}</div>
-                        </div>
-                      )}
-                      <div className="sm:col-span-2">
-                        <div className="text-sm font-medium mb-1 flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          Dirección de Envío
-                        </div>
-                        <div className="text-sm text-muted-foreground">{order.shippingAddress}</div>
-                      </div>
-                    </div>
-
                     {/* Order Items */}
                     <div className="space-y-4">
                       <div className="text-sm font-medium">Productos</div>
@@ -269,20 +171,20 @@ export default function OrderStatusPage() {
                         <div key={item.id} className="flex gap-4">
                           <div className="relative w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
                             <Image
-                              src={item.image || "/placeholder.svg"}
-                              alt={item.name}
+                              src={"/placeholder.svg"}
+                              alt={item.productTitle}
                               fill
                               className="object-cover"
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm truncate">{item.name}</h3>
+                            <h3 className="font-medium text-sm truncate">{item.productTitle}</h3>
                             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                              <span>Talle: {item.size}</span>
+                              {item.variantTitle && <span>{item.variantTitle}</span>}
                               <span>Cant: {item.quantity}</span>
                             </div>
                           </div>
-                          <div className="text-sm font-medium flex-shrink-0">${item.price}</div>
+                          <div className="text-sm font-medium flex-shrink-0">${Number(item.price)}</div>
                         </div>
                       ))}
                     </div>
@@ -290,7 +192,7 @@ export default function OrderStatusPage() {
                     {/* Total */}
                     <div className="flex justify-between items-center pt-4 border-t">
                       <span className="font-semibold">Total</span>
-                      <span className="text-2xl font-bold">${order.total}</span>
+                      <span className="text-2xl font-bold">${total}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -298,7 +200,8 @@ export default function OrderStatusPage() {
             })}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   )
 }
