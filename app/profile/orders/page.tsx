@@ -171,7 +171,7 @@ export default function OrderStatusPage() {
                         <div key={item.id} className="flex gap-4">
                           <div className="relative w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
                             <Image
-                              src={"/placeholder.svg"}
+                              src={item.imageUrl || "/placeholder.svg"}
                               alt={item.productTitle}
                               fill
                               className="object-cover"

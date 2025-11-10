@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { orders, orderItems, products, productVariants, addresses } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { orders, orderItems, products, productVariants, addresses, productImages } from "@/lib/db/schema";
+import { eq, desc, inArray } from "drizzle-orm";
 
 export async function GET(
   req: NextRequest,
@@ -78,6 +78,28 @@ export async function GET(
           .from(orderItems)
           .where(eq(orderItems.orderId, order.id));
 
+        // Obtener imagen principal para los productos de la orden
+        const productIds = Array.from(new Set(items.map((i) => i.productId))).filter(Boolean) as string[];
+        let imagesByProduct: Record<string, string> = {};
+        if (productIds.length > 0) {
+          const productImgs = await db
+            .select({ productId: productImages.productId, url: productImages.url, position: productImages.position })
+            .from(productImages)
+            .where(inArray(productImages.productId, productIds))
+            .orderBy(productImages.position);
+
+          for (const img of productImgs) {
+            if (!imagesByProduct[img.productId]) {
+              imagesByProduct[img.productId] = img.url;
+            }
+          }
+        }
+
+        const itemsWithImages = items.map((item) => ({
+          ...item,
+          imageUrl: imagesByProduct[item.productId] || "/placeholder.svg",
+        }));
+
         // Obtener direcciones de la orden
         const orderAddresses = await db
           .select({
@@ -99,7 +121,7 @@ export async function GET(
 
         return {
           ...order,
-          items,
+          items: itemsWithImages,
           addresses: orderAddresses,
         };
       })

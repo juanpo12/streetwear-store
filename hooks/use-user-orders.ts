@@ -12,6 +12,7 @@ interface OrderItemDTO {
   variantTitle: string | null
   productId: string
   variantId: string | null
+  imageUrl: string
 }
 
 interface AddressDTO {
