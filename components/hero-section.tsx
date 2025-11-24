@@ -7,16 +7,16 @@ import { motion } from "framer-motion"
 export function HeroSection() {
   return (
     <section className="relative h-[80vh] flex items-center justify-center bg-muted overflow-hidden">
-      <div className="absolute inset-0">
-        <Image
-          src="/urban-streetwear-model-wearing-oversized-hoodie-in.jpg"
-          alt="Fondo de streetwear urbano"
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/90 to-background/60" />
-      </div>
+              <div className="absolute inset-0">
+                <Image
+                  src="/urban-streetwear-model-wearing-oversized-hoodie-in.jpg"
+                  alt="Fondo de streetwear urbano"
+                  fill
+                  priority
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-background/70 to-background/20" />
+              </div>
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}
