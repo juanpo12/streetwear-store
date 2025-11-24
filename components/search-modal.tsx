@@ -6,6 +6,7 @@ import Link from "next/link"
 import { X, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Image from "next/image"
 
 interface SearchModalProps {
   open: boolean
@@ -133,7 +134,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border/20 backdrop-blur-sm bg-background/60">
             <h2 className="text-streetwear-sm">BUSCAR PRODUCTOS</h2>
-            <Button variant="ghost" size="icon" onClick={handleClose}>
+            <Button variant="ghost" size="icon" onClick={handleClose} aria-label="Cerrar buscador">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -148,6 +149,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-10 h-10 backdrop-blur-sm bg-background/60 border-border/30"
+                aria-label="Buscar productos"
               />
               {searchQuery && (
                 <Button
@@ -198,10 +200,13 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
                     onClick={() => handleProductClick(product.id)}
                   >
                     <div className="relative w-16 h-16 rounded overflow-hidden">
-                      <img
+                      <Image
                         src={product.image || "/placeholder.svg"}
                         alt={product.name}
+                        width={64}
+                        height={64}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        unoptimized
                       />
                     </div>
                     <div className="flex-1 space-y-1">

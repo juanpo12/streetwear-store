@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 
 interface Product {
   id: string | number
@@ -84,12 +85,18 @@ export function FeaturedProducts() {
   return (
     <section className="py-20 px-4">
       <div className="container mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-streetwear-lg mb-4">DESTACADOS</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
+        >
+          <h2 className="text-streetwear-lg mb-4 tracking-tight">DESTACADOS</h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
             Las últimas piezas de nuestra colección: audaces, cómodas y pensadas para la calle.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {featuredProducts.map((product) => (
@@ -98,9 +105,11 @@ export function FeaturedProducts() {
         </div>
 
         <div className="text-center mt-12">
-          <Button size="lg" variant="outline" asChild>
-            <Link href="/shop">VER TODOS LOS PRODUCTOS</Link>
-          </Button>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/shop" aria-label="Ver todos los productos">VER TODOS LOS PRODUCTOS</Link>
+            </Button>
+          </motion.div>
         </div>
       </div>
     </section>

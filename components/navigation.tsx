@@ -35,13 +35,13 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/shop" className="text-sm font-medium hover:text-accent transition-colors">
+            <Link href="/shop" className="text-sm font-medium hover:text-accent transition-colors" aria-label="Ir a la tienda">
               TIENDA
             </Link>
-            <Link href="/collections" className="text-sm font-medium hover:text-accent transition-colors">
+            <Link href="/collections" className="text-sm font-medium hover:text-accent transition-colors" aria-label="Ver colecciones">
               COLECCIONES
             </Link>
-            <Link href="/about" className="text-sm font-medium hover:text-accent transition-colors">
+            <Link href="/about" className="text-sm font-medium hover:text-accent transition-colors" aria-label="Acerca de">
               ACERCA DE
             </Link>
           </div>
@@ -78,13 +78,13 @@ export function Navigation() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t">
             <div className="flex flex-col space-y-4">
-              <Link href="/shop" className="text-sm font-medium hover:text-accent transition-colors">
+              <Link href="/shop" className="text-sm font-medium hover:text-accent transition-colors" aria-label="Ir a la tienda">
                 TIENDA
               </Link>
-              <Link href="/collections" className="text-sm font-medium hover:text-accent transition-colors">
+              <Link href="/collections" className="text-sm font-medium hover:text-accent transition-colors" aria-label="Ver colecciones">
                 COLECCIONES
               </Link>
-              <Link href="/about" className="text-sm font-medium hover:text-accent transition-colors">
+              <Link href="/about" className="text-sm font-medium hover:text-accent transition-colors" aria-label="Acerca de">
                 ACERCA DE
               </Link>
               {/* Admin Link - Solo visible para administradores en móvil */}

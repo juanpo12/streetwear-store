@@ -1,5 +1,11 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Sparkles } from "lucide-react"
+
+export const metadata = {
+  title: "Colecciones | Urban Threads",
+  description: "Próximamente: colecciones curadas con estilo urbano y calidad premium.",
+}
 
 
 export default function CollectionsPage() {
@@ -11,8 +17,11 @@ export default function CollectionsPage() {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Lanzamientos curados que definen la cultura. Cada colección cuenta una historia de expresión urbana y estilo auténtico.
           </p>
-          <div className="mt-6 inline-flex flex-col items-center gap-2 rounded-lg border bg-muted p-6">
-            <h2 className="text-streetwear-sm">PRÓXIMAMENTE</h2>
+          <div className="mt-6 inline-flex flex-col items-center gap-3 rounded-xl border bg-muted/60 p-6">
+            <h2 className="text-streetwear-sm flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-accent" />
+              PRÓXIMAMENTE
+            </h2>
             <p className="text-sm text-muted-foreground max-w-md">
               Estamos preparando colecciones épicas. Muy pronto disponibles.
             </p>
