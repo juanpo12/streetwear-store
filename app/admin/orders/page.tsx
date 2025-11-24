@@ -266,7 +266,7 @@ export default function OrdersPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" asChild>
-                          <Link href={`/orders/${order.id}`}>
+                          <Link href={`/admin/orders/${order.id}`}>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
