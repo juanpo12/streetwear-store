@@ -107,7 +107,7 @@ export function FeaturedProducts() {
         <div className="text-center mt-12">
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/shop" aria-label="Ver todos los productos">VER TODOS LOS PRODUCTOS</Link>
+              <Link href="/tienda" aria-label="Ver todos los productos">VER TODOS LOS PRODUCTOS</Link>
             </Button>
           </motion.div>
         </div>

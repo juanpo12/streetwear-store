@@ -1,6 +1,20 @@
+"use client"
 import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { toast } from "sonner"
 
 export function CTASection() {
+  const [email, setEmail] = useState("")
+
+  const handleSubscribe = () => {
+    const isValid = /.+@.+\..+/.test(email)
+    if (!isValid) {
+      toast.error("Ingresá un email válido")
+      return
+    }
+    toast.success("¡Gracias por suscribirte!")
+    setEmail("")
+  }
   return (
     <section className="py-20 bg-primary text-primary-foreground">
       <div className="container mx-auto px-4 text-center">
@@ -13,8 +27,11 @@ export function CTASection() {
             type="email"
             placeholder="Ingresá tu email"
             className="flex-1 px-4 py-3 rounded bg-primary-foreground text-primary placeholder:text-primary/60"
+            aria-label="Ingresá tu email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
-          <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+          <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={handleSubscribe} aria-label="Suscribirme">
             SUSCRIBIRME
           </Button>
         </div>

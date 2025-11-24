@@ -12,7 +12,7 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4 uppercase tracking-wide">Tienda</h4>
             <div className="space-y-2 text-sm">
-              <Link href="/shop" className="block hover:text-accent transition-colors">
+              <Link href="/tienda" className="block hover:text-accent transition-colors">
                 Todos los productos
               </Link>
               <Link href="/hoodies" className="block hover:text-accent transition-colors">

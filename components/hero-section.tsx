@@ -1,3 +1,4 @@
+"use client"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
@@ -30,7 +31,7 @@ export function HeroSection() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button size="lg" className="bg-primary hover:bg-accent text-lg px-8" asChild>
-              <Link href="/shop" aria-label="Ir a la tienda">COMPRAR AHORA</Link>
+              <Link href="/tienda" aria-label="Ir a la tienda">COMPRAR AHORA</Link>
             </Button>
           </motion.div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
