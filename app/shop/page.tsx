@@ -80,7 +80,7 @@ const ShopPage: React.FC = () => {
                 : "bg-white text-gray-600 hover:text-primary hover:border-primary/50"
             )}
           >
-            {cat}
+            {cat === "ALL" ? "Todas" : cat}
           </motion.button>
         ))}
       </div>

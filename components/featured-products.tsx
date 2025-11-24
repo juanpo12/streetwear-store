@@ -49,9 +49,9 @@ export function FeaturedProducts() {
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-streetwear-lg mb-4">FEATURED DROPS</h2>
+            <h2 className="text-streetwear-lg mb-4">DESTACADOS</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              The latest pieces from our collection. Bold, comfortable, and designed for the streets.
+              Las últimas piezas de nuestra colección: audaces, cómodas y pensadas para la calle.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -73,8 +73,8 @@ export function FeaturedProducts() {
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <div className="text-center">
-            <h2 className="text-streetwear-lg mb-4">FEATURED DROPS</h2>
-            <p className="text-red-500">Error loading featured products: {error}</p>
+            <h2 className="text-streetwear-lg mb-4">DESTACADOS</h2>
+            <p className="text-red-500">Error al cargar productos destacados: {error}</p>
           </div>
         </div>
       </section>
@@ -85,9 +85,9 @@ export function FeaturedProducts() {
     <section className="py-20 px-4">
       <div className="container mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-streetwear-lg mb-4">FEATURED DROPS</h2>
+          <h2 className="text-streetwear-lg mb-4">DESTACADOS</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            The latest pieces from our collection. Bold, comfortable, and designed for the streets.
+            Las últimas piezas de nuestra colección: audaces, cómodas y pensadas para la calle.
           </p>
         </div>
 
@@ -99,7 +99,7 @@ export function FeaturedProducts() {
 
         <div className="text-center mt-12">
           <Button size="lg" variant="outline" asChild>
-            <Link href="/shop">VIEW ALL PRODUCTS</Link>
+            <Link href="/shop">VER TODOS LOS PRODUCTOS</Link>
           </Button>
         </div>
       </div>

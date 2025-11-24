@@ -112,7 +112,7 @@ export function SearchSidebar() {
           <div className="flex flex-col h-full">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border/50 bg-background/40">
-              <h2 className="text-streetwear-sm">SEARCH</h2>
+              <h2 className="text-streetwear-sm">BUSCAR</h2>
               <Button variant="ghost" size="icon" onClick={closeSearch}>
                 <X className="h-5 w-5" />
               </Button>
@@ -124,7 +124,7 @@ export function SearchSidebar() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder="Buscar productos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 bg-background/60 backdrop-blur-sm border-border/50"

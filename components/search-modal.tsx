@@ -132,7 +132,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border/20 backdrop-blur-sm bg-background/60">
-            <h2 className="text-streetwear-sm">SEARCH PRODUCTS</h2>
+            <h2 className="text-streetwear-sm">BUSCAR PRODUCTOS</h2>
             <Button variant="ghost" size="icon" onClick={handleClose}>
               <X className="h-5 w-5" />
             </Button>
@@ -144,7 +144,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search for products..."
+                placeholder="Buscar productos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-10 h-10 backdrop-blur-sm bg-background/60 border-border/30"

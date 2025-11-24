@@ -3,13 +3,13 @@ import { ProductCard } from "@/components/product-card"
 const collections = [
   {
     id: "oversized",
-    name: "OVERSIZED ESSENTIALS",
-    description: "Loose fits that define the streets",
+    name: "ESENCIALES OVERSIZE",
+    description: "Cortes amplios que definen la calle",
     image: "/oversized-streetwear-collection-hoodies-and-tees.jpg",
     products: [
       {
         id: 1,
-        name: "OVERSIZED HOODIE",
+        name: "Buzo Oversize",
         price: 89,
         image: "/oversized-black-hoodie-streetwear.png",
         category: "Hoodies",
@@ -19,11 +19,11 @@ const collections = [
         name: "BOXY TEE",
         price: 45,
         image: "/boxy-fit-white-t-shirt-streetwear.jpg",
-        category: "T-Shirts",
+        category: "Remeras",
       },
       {
         id: 3,
-        name: "WIDE CARGO PANTS",
+        name: "Cargo Ancho",
         price: 120,
         image: "/wide-cargo-pants-streetwear-urban.jpg",
         category: "Pants",
@@ -32,13 +32,13 @@ const collections = [
   },
   {
     id: "urban",
-    name: "URBAN CLASSICS",
-    description: "Timeless pieces with street attitude",
+    name: "CLÁSICOS URBANOS",
+    description: "Piezas atemporales con actitud urbana",
     image: "/urban-streetwear-collection-jackets-and-accessorie.jpg",
     products: [
       {
         id: 4,
-        name: "BOMBER JACKET",
+        name: "Campera Bomber",
         price: 150,
         image: "/black-bomber-streetwear.png",
         category: "Jackets",
@@ -48,11 +48,11 @@ const collections = [
         name: "BUCKET HAT",
         price: 35,
         image: "/black-bucket-hat-streetwear.jpg",
-        category: "Accessories",
+        category: "Accesorios",
       },
       {
         id: 6,
-        name: "TRACK PANTS",
+        name: "Pantalón Deportivo",
         price: 85,
         image: "/black-track-pants-streetwear.jpg",
         category: "Pants",
@@ -66,10 +66,9 @@ export default function CollectionsPage() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-streetwear-lg mb-4">COLLECTIONS</h1>
+          <h1 className="text-streetwear-lg mb-4">COLECCIONES</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Curated drops that define the culture. Each collection tells a story of urban expression and authentic
-            style.
+            Lanzamientos curados que definen la cultura. Cada colección cuenta una historia de expresión urbana y estilo auténtico.
           </p>
         </div>
 
