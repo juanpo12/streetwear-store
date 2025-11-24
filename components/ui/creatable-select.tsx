@@ -163,7 +163,7 @@ export function CreatableSelect({
                   onClick={handleCreate}
                 >
                   <span className="text-muted-foreground mr-2">Create:</span>
-                  <span className="font-medium">"{inputValue}"</span>
+                  <span className="font-medium">&quot;{inputValue}&quot;</span>
                   {creating && (
                     <span className="ml-2 text-xs text-muted-foreground">
                       Creating...

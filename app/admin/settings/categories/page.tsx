@@ -114,7 +114,7 @@ export default function Categorias() {
                                   quedarán desactivados hasta que les asignés una nueva categoría.
                                 </span>
                               ) : (
-                                <span>¿Estás seguro que querés eliminar "{category.name}"? Esta acción no se puede deshacer.</span>
+                                <span>¿Estás seguro que querés eliminar &quot;{category.name}&quot;? Esta acción no se puede deshacer.</span>
                               )}
                             </AlertDialogDescription>
                           </AlertDialogHeader>

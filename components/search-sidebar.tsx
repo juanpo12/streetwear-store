@@ -191,7 +191,7 @@ export function SearchSidebar() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground mb-4">Resultados para "{searchQuery}"</p>
+                  <p className="text-xs text-muted-foreground mb-4">Resultados para &quot;{searchQuery}&quot;</p>
                   {searchResults.map((product) => (
                     <Link
                       key={product.id}

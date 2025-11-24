@@ -61,7 +61,7 @@ export default function AboutPage() {
             </div>
             <h3 className="text-streetwear-sm">COMMUNITY</h3>
             <p className="text-muted-foreground text-sm">
-              Built by the culture, for the culture. We're all part of the same movement.
+              Built by the culture, for the culture. We&apos;re all part of the same movement.
             </p>
           </div>
         </div>

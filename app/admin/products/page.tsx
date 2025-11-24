@@ -277,7 +277,7 @@ export default function AdminProductsPage() {
 
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
-                        <p className="text-sm font-medium">Stock: {stockVal ?? '-'}</p>
+                        <p className="text-sm font-medium">Stock: {stockVal ?? "-"}</p>
                         <Badge variant={badgeVariant as any}>{badgeText}</Badge>
                       </div>
 
