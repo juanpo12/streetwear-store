@@ -86,7 +86,7 @@ export function ProductCard({ product }: ProductCardProps) {
               </Badge>
             )}
             {product.onSale && (
-              <Badge className="bg-amber-500/90 backdrop-blur-sm text-white border-0 shadow-lg rounded-full px-3 py-1">
+              <Badge className="bg-accent/90 backdrop-blur-sm text-accent-foreground border-0 shadow-lg rounded-full px-3 py-1">
                 <Tag className="h-3 w-3 mr-1" />
                 Oferta
               </Badge>
@@ -149,7 +149,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </Badge>
             {/* Rating (mock) */}
             <div className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+              <Star className="h-3.5 w-3.5 fill-current text-accent" />
               <span className="text-xs font-medium text-muted-foreground">4.8</span>
             </div>
           </div>

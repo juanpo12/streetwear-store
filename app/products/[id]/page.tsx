@@ -338,7 +338,7 @@ export default function ProductPage() {
                   </Badge>
                 )}
                 {product.onSale && (
-                  <Badge className="bg-amber-500 text-white shadow-lg backdrop-blur-sm rounded-full px-4 py-1.5">
+                  <Badge className="bg-accent text-accent-foreground shadow-lg backdrop-blur-sm rounded-full px-4 py-1.5">
                     OFERTA
                   </Badge>
                 )}
@@ -402,7 +402,7 @@ export default function ProductPage() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <Star key={i} className="h-4 w-4 fill-current text-accent" />
                   ))}
                 </div>
                 <span className="text-sm text-muted-foreground">(124 reseñas)</span>
@@ -429,7 +429,7 @@ export default function ProductPage() {
               <div className="text-right">
                 <div className={`text-sm font-semibold px-4 py-2 rounded-full ${
                   (((product.variants || []).reduce((sum: number, v: any) => sum + (v.inventoryQuantity || 0), 0)) || (product.stock || 0)) > 10 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
-                  (((product.variants || []).reduce((sum: number, v: any) => sum + (v.inventoryQuantity || 0), 0)) || (product.stock || 0)) > 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 
+                  (((product.variants || []).reduce((sum: number, v: any) => sum + (v.inventoryQuantity || 0), 0)) || (product.stock || 0)) > 0 ? 'bg-accent/15 text-accent dark:bg-accent/20 dark:text-accent' : 
                   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                 }`}>
                   {(((product.variants || []).reduce((sum: number, v: any) => sum + (v.inventoryQuantity || 0), 0)) || (product.stock || 0)) > 0 
