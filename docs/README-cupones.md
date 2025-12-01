@@ -82,3 +82,51 @@ await db.insert(coupons).values({
 ## Operativa
 - Si el `push/migrate` de Drizzle falla por parsing en Node 22, aplica el SQL manualmente en Supabase.
 - Usa `push`/`migrate` con Node 20 o actualiza `drizzle-kit` cuando esté disponible.
+
+## Límites y consumo
+- Límite global: define `usageLimit` en el cupón. Cuando `usedCount` alcanza el límite, la validación devuelve `global_limit` y bloquea nuevos usos (`lib/coupons.ts:116-117`).
+- Una vez por usuario: el índice único `(coupon_id, user_id)` en `coupon_redemptions` impide reusar el mismo cupón por el mismo usuario (`lib/db/migrations/0003_coupons_per_user.sql`).
+- Consumo sólo con pago aprobado: la redención se registra en el webhook de pago aprobado; aplicar el cupón en checkout no lo gasta (`app/api/mercadopago/webhook/route.ts:205`).
+- Incremento atómico de `usedCount`: la redención aumenta el contador en transacción con `sql` para evitar condiciones de carrera (`lib/coupons.ts:141-143`).
+
+### Ejemplos SQL
+- Cupón general 15% con límite global 10:
+```sql
+INSERT INTO "coupons" (
+  "code","type","value","minimum_amount","usage_limit","used_count","is_active",
+  "user_id","starts_at","expires_at","created_at","updated_at"
+) VALUES (
+  'LANZ-15-GEN',
+  'percentage',
+  '15',
+  NULL,
+  10,
+  0,
+  TRUE,
+  NULL,
+  NOW(),
+  NOW() + INTERVAL '14 days',
+  NOW(),
+  NOW()
+);
+```
+- Cupón fijo $1500 ligado a usuario:
+```sql
+INSERT INTO "coupons" (
+  "code","type","value","minimum_amount","usage_limit","used_count","is_active",
+  "user_id","starts_at","expires_at","created_at","updated_at"
+) VALUES (
+  'VIP-1500-JUANJ',
+  'fixed_amount',
+  '1500',
+  NULL,
+  1,
+  0,
+  TRUE,
+  '<USER_UUID>',
+  NOW(),
+  NOW() + INTERVAL '7 days',
+  NOW(),
+  NOW()
+);
+```
