@@ -35,6 +35,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
   const [couponPreview, setCouponPreview] = useState<number>(0)
+  const [myCoupons, setMyCoupons] = useState<Array<{ code: string }>>([])
   
   // Form state
   const [formData, setFormData] = useState<CheckoutFormData>({
@@ -124,6 +125,21 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
   const total = subtotal + shipping + tax
   const displayTotal = Math.max(0, total - couponPreview)
 
+  useEffect(() => {
+    let ignore = false
+    const fetchCoupons = async () => {
+      try {
+        const res = await fetch('/api/coupons/my')
+        const data = await res.json()
+        if (!ignore && res.ok) {
+          setMyCoupons((data.coupons || []).map((c: any) => ({ code: c.code })))
+        }
+      } catch {}
+    }
+    if (user) fetchCoupons()
+    return () => { ignore = true }
+  }, [user])
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Header */}
@@ -203,6 +219,42 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
                     placeholder="Ingresa tu código de descuento"
                     disabled={loading}
                   />
+                  {myCoupons.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <select
+                        className="h-9 px-3 rounded-md border bg-background"
+                        value={formData.discountCode || ''}
+                        onChange={(e) => handleInputChange("discountCode", e.target.value)}
+                      >
+                        <option value="">Seleccionar cupón</option>
+                        {myCoupons.map((c) => (
+                          <option key={c.code} value={c.code}>{c.code}</option>
+                        ))}
+                      </select>
+                      <Button type="button" variant="outline" size="sm" disabled={couponLoading || !formData.discountCode} onClick={async () => {
+                        try {
+                          setCouponError(null)
+                          setCouponLoading(true)
+                          const res = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: formData.discountCode, total }) })
+                          const data = await res.json()
+                          if (!res.ok) {
+                            const reasons: Record<string, string> = { not_found: "Cupón no encontrado", inactive: "Cupón inactivo", not_started: "Cupón todavía no está vigente", expired: "Cupón expirado", not_assigned: "Este cupón no está asignado a tu cuenta", min_amount: "El total no alcanza el mínimo requerido por el cupón", global_limit: "Se alcanzó el límite de uso del cupón", already_used: "Ya utilizaste este cupón" }
+                            setCouponError(reasons[data?.reason] || data?.error || "Cupón inválido")
+                            setCouponPreview(0)
+                          } else {
+                            setCouponPreview(Number(data.discount) || 0)
+                          }
+                        } catch (e: any) {
+                          setCouponError(e?.message || "Error validando cupón")
+                          setCouponPreview(0)
+                        } finally {
+                          setCouponLoading(false)
+                        }
+                      }}>
+                        {couponLoading ? "Validando..." : "Aplicar"}
+                      </Button>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <Button type="button" variant="outline" size="sm" disabled={couponLoading || !formData.discountCode} onClick={async () => {
                       try {
