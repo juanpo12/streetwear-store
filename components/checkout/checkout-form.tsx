@@ -392,9 +392,9 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
 
           {/* Order Summary - 2 columns */}
           <div className="lg:col-span-2">
-            <div className="lg:sticky lg:top-6">
-              <Card className="border-border shadow-lg bg-card">
-                <CardHeader className="border-b border-border bg-secondary">
+            <div className="lg:sticky lg:top-6 ">
+              <Card className="border-border shadow-lg bg-card pt-0">
+                <CardHeader className="border-b border-border bg-secondary p-4">
                   <CardTitle className="flex items-center gap-2 text-foreground">
                     <ShoppingBag className="h-5 w-5 text-muted-foreground" />
                     Resumen del Pedido
