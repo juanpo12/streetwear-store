@@ -35,6 +35,7 @@ const CreateCouponSchema = z
     prefix: z.string().max(16).optional(),
     groups: z.number().int().min(1).max(8).optional(),
     groupSize: z.number().int().min(3).max(8).optional(),
+    userId: z.string().uuid().optional(),
   })
   .refine((d) => (d.type === 'percentage' ? d.value > 0 && d.value <= 90 : true), {
     message: 'percentage out of range',
@@ -72,6 +73,7 @@ export async function createCoupon(input: CreateCouponInput) {
     usageLimit: parsed.usageLimit ?? null,
     usedCount: 0,
     isActive: true,
+    userId: parsed.userId ?? null,
     startsAt: parsed.startsAt ?? null,
     expiresAt: parsed.expiresAt ?? null,
     createdAt: now,

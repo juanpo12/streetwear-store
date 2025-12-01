@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useCart } from "@/components/cart-provider"
 import { Loader2, CreditCard, User, Mail, Phone, FileText, ArrowLeft } from "lucide-react"
 import { z } from "zod"
+import Image from "next/image"
 
 // Zod schema for checkout form validation
 const CheckoutSchema = z.object({
@@ -297,11 +298,13 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
               <div className="space-y-3">
                 {state.items.map((item) => (
                   <div key={item.id} className="flex gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                      <img
-                        src={item.image || "/placeholder.svg"}
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0 relative">
+                      <Image
+                        src={item.image || "/placeholder.jpg"}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="64px"
+                        className="object-cover"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -328,7 +331,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
 
               <Separator />
 
-              {/* Totals */}
+              {/* Totales */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
@@ -344,10 +347,16 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
                     <span>${tax.toFixed(2)}</span>
                   </div>
                 )}
+                {couponPreview > 0 && (
+                  <div className="flex justify-between text-sm text-green-700">
+                    <span>Descuento</span>
+                    <span>- ${couponPreview.toFixed(2)}</span>
+                  </div>
+                )}
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>${displayTotal.toFixed(2)}</span>
                 </div>
               </div>
 
