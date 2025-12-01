@@ -4,16 +4,9 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 export function CTASection() {
-  const [email, setEmail] = useState("")
 
-  const handleSubscribe = () => {
-    const isValid = /.+@.+\..+/.test(email)
-    if (!isValid) {
-      toast.error("Ingresá un email válido")
-      return
-    }
-    toast.success("¡Gracias por suscribirte!")
-    setEmail("")
+  const redirectToRegister = () => {
+    window.location.href = "/auth/register"
   }
   return (
     <section className="py-20 bg-primary text-primary-foreground">
@@ -23,16 +16,8 @@ export function CTASection() {
           Sé el primero en enterarte de nuevos lanzamientos, ediciones exclusivas y novedades de la cultura streetwear.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-          <input
-            type="email"
-            placeholder="Ingresá tu email"
-            className="flex-1 px-4 py-3 rounded bg-primary-foreground text-primary placeholder:text-primary/60"
-            aria-label="Ingresá tu email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={handleSubscribe} aria-label="Suscribirme">
-            SUSCRIBIRME
+          <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={redirectToRegister} aria-label="Suscribirme">
+            REGISTRARME
           </Button>
         </div>
       </div>
