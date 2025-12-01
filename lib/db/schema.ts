@@ -247,10 +247,20 @@ export const coupons = pgTable('coupons', {
   usageLimit: integer('usage_limit'),
   usedCount: integer('used_count').default(0).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   startsAt: timestamp('starts_at'),
   expiresAt: timestamp('expires_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Coupon redemptions per user (one redemption per user per coupon)
+export const couponRedemptions = pgTable('coupon_redemptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  couponId: uuid('coupon_id').references(() => coupons.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  orderId: uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  redeemedAt: timestamp('redeemed_at').defaultNow().notNull(),
 })
 
 // Relations
@@ -453,3 +463,5 @@ export type Review = typeof reviews.$inferSelect
 export type NewReview = typeof reviews.$inferInsert
 export type Coupon = typeof coupons.$inferSelect
 export type NewCoupon = typeof coupons.$inferInsert
+export type CouponRedemption = typeof couponRedemptions.$inferSelect
+export type NewCouponRedemption = typeof couponRedemptions.$inferInsert
