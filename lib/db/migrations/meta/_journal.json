@@ -22,6 +22,13 @@
       "when": 1760934854071,
       "tag": "0002_worthless_mikhail_rasputin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1764569038171,
+      "tag": "0003_coupons_per_user",
+      "breakpoints": true
     }
   ]
 }

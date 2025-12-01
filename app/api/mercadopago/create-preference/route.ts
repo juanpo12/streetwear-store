@@ -2,6 +2,7 @@ import { createPreference } from "@/lib/mercadopago";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { canRedeemCoupon } from "@/lib/coupons";
 import { products, productVariants, productImages, orders, orderItems } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
@@ -147,7 +148,52 @@ export async function POST(req: NextRequest) {
 
     const totalTax = 0 // No tax for now
     const totalShipping = 0 // Free shipping for now
-    const totalPrice = subtotalPrice + totalTax + totalShipping
+    let totalPrice = subtotalPrice + totalTax + totalShipping
+
+    // Apply coupon discount if provided and user is authenticated
+    let appliedDiscount = 0
+    if (discountCode) {
+      if (!user?.id) {
+        return NextResponse.json({ error: "Debes iniciar sesión para usar un cupón" }, { status: 401 })
+      }
+      const check = await canRedeemCoupon({ code: discountCode, userId: user.id, orderTotal: totalPrice })
+      if (!check.ok) {
+        const reason = check.reason
+        const messages: Record<string, string> = {
+          not_found: "Cupón no encontrado",
+          inactive: "Cupón inactivo",
+          not_started: "Cupón todavía no está vigente",
+          expired: "Cupón expirado",
+          not_assigned: "Este cupón no está asignado a tu cuenta",
+          min_amount: "El total no alcanza el mínimo requerido por el cupón",
+          global_limit: "Se alcanzó el límite de uso del cupón",
+          already_used: "Ya utilizaste este cupón",
+        }
+        return NextResponse.json({ error: messages[reason] || "Cupón inválido" }, { status: 400 })
+      }
+      appliedDiscount = Math.min(check.discount, totalPrice)
+      totalPrice = Math.max(0, totalPrice - appliedDiscount)
+
+      // Pro-rate discount across items to keep MercadoPago total coherente
+      if (appliedDiscount > 0 && subtotalPrice > 0) {
+        // calcular descuentos por item en unit_price
+        let remaining = appliedDiscount
+        for (let i = 0; i < secureItems.length; i++) {
+          const item = secureItems[i]
+          const itemTotal = item.price * item.quantity
+          const fraction = itemTotal / subtotalPrice
+          let itemDiscountTotal = Number((appliedDiscount * fraction).toFixed(2))
+          if (i === secureItems.length - 1) {
+            // ajustar último para compensar redondeo
+            itemDiscountTotal = Number(remaining.toFixed(2))
+          }
+          remaining = Number((remaining - itemDiscountTotal).toFixed(2))
+          const discountPerUnit = Number((itemDiscountTotal / item.quantity).toFixed(2))
+          const newUnit = Math.max(0, Number((item.price - discountPerUnit).toFixed(2)))
+          item.price = newUnit
+        }
+      }
+    }
 
     // Generate unique order number
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`

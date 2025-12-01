@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Payment } from 'mercadopago'
+import { payment } from '@/lib/mercadopago'
 import { db } from '@/lib/db'
 import { orders, orderItems, products, productVariants } from '@/lib/db/schema'
 import { eq, sql } from 'drizzle-orm'
-import { client } from '@/lib/mercadopago'
-
-const payment = new Payment(client)
+import { redeemCoupon } from '@/lib/coupons'
 
 export async function POST(req: NextRequest) {
   try {
@@ -199,6 +197,21 @@ export async function POST(req: NextRequest) {
                 }
               } catch (stockError) {
                 console.error('❌ Error processing stock reduction:', stockError)
+              }
+
+              // Registrar redención de cupón si corresponde
+              try {
+                if (existingOrder.notes && existingOrder.userId) {
+                  const total = Number(existingOrder.totalPrice)
+                  const res = await redeemCoupon({ code: String(existingOrder.notes), userId: String(existingOrder.userId), orderId: String(existingOrder.id), orderTotal: isNaN(total) ? 0 : total })
+                  if (res.ok) {
+                    console.log('✅ Coupon redeemed for order:', existingOrder.id)
+                  } else {
+                    console.warn('⚠️ Coupon could not be redeemed:', res.reason)
+                  }
+                }
+              } catch (couponErr) {
+                console.error('❌ Error redeeming coupon:', couponErr)
               }
             }
           }
