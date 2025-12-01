@@ -31,6 +31,9 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
   const { state, totalPrice, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [couponError, setCouponError] = useState<string | null>(null)
+  const [couponPreview, setCouponPreview] = useState<number>(0)
   
   // Form state
   const [formData, setFormData] = useState<CheckoutFormData>({
@@ -118,6 +121,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
   const shipping = 500 // Shipping cost
   const tax = 0 // No tax for now
   const total = subtotal + shipping + tax
+  const displayTotal = Math.max(0, total - couponPreview)
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -198,6 +202,36 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
                     placeholder="Ingresa tu código de descuento"
                     disabled={loading}
                   />
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" disabled={couponLoading || !formData.discountCode} onClick={async () => {
+                      try {
+                        setCouponError(null)
+                        setCouponLoading(true)
+                        const res = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: formData.discountCode, total }) })
+                        const data = await res.json()
+                        if (!res.ok) {
+                          const reasons: Record<string, string> = { not_found: "Cupón no encontrado", inactive: "Cupón inactivo", not_started: "Cupón todavía no está vigente", expired: "Cupón expirado", not_assigned: "Este cupón no está asignado a tu cuenta", min_amount: "El total no alcanza el mínimo requerido por el cupón", global_limit: "Se alcanzó el límite de uso del cupón", already_used: "Ya utilizaste este cupón" }
+                          setCouponError(reasons[data?.reason] || data?.error || "Cupón inválido")
+                          setCouponPreview(0)
+                        } else {
+                          setCouponPreview(Number(data.discount) || 0)
+                        }
+                      } catch (e: any) {
+                        setCouponError(e?.message || "Error validando cupón")
+                        setCouponPreview(0)
+                      } finally {
+                        setCouponLoading(false)
+                      }
+                    }}>
+                      {couponLoading ? "Validando..." : "Aplicar"}
+                    </Button>
+                    {couponPreview > 0 && (
+                      <Badge variant="outline">Descuento aplicado: ${couponPreview.toFixed(2)}</Badge>
+                    )}
+                    {couponError && (
+                      <span className="text-sm text-red-600">{couponError}</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Error Message */}
@@ -221,7 +255,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
                   ) : (
                     <>
                       <CreditCard className="mr-2 h-5 w-5" />
-                      Proceder al Pago - ${total.toFixed(2)}
+                      Proceder al Pago - ${displayTotal.toFixed(2)}
                     </>
                   )}
                 </Button>
