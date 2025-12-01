@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { coupons, couponRedemptions } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 
 const CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
@@ -141,7 +141,7 @@ export async function redeemCoupon(params: { code: string; userId: string; order
     await tx.insert(couponRedemptions).values({ couponId: c.id, userId: params.userId, orderId: params.orderId ?? null })
     await tx
       .update(coupons)
-      .set({ usedCount: (c.usedCount ?? 0) + 1, updatedAt: new Date() })
+      .set({ usedCount: sql`${coupons.usedCount} + 1`, updatedAt: new Date() })
       .where(eq(coupons.id, c.id))
     return { ok: true, discount: check.discount, coupon: c }
   })
