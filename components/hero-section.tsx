@@ -24,9 +24,9 @@ export function HeroSection() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="relative text-center space-y-6 px-4 z-10"
       >
-        <h1 className="text-streetwear-xl text-balance tracking-tight">URBAN THREADS</h1>
+        <h1 className="text-streetwear-xl text-balance tracking-tight">ES INDUMENTARIA</h1>
         <p className="text-xl leading-relaxed text-muted-foreground max-w-2xl mx-auto text-balance">
-          Streetwear premium para el estilo urbano moderno. Siluetas oversize, diseños audaces y calidad sin compromiso.
+          ES indumentaria para el estilo urbano moderno. Siluetas oversize, diseños audaces y calidad sin compromiso.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>

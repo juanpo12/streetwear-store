@@ -14,7 +14,7 @@ export function CTASection() {
           Sé el primero en enterarte de nuevos lanzamientos, ediciones exclusivas y novedades de la cultura streetwear.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-          <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={redirectToRegister} aria-label="Suscribirme">
+          <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={redirectToRegister}>
             REGISTRARME
           </Button>
         </div>
