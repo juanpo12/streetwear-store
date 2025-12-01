@@ -165,7 +165,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
   }, [user])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -178,10 +178,10 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-900 to-orange-700 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-foreground">
               Finalizar Compra
             </h1>
-            <p className="text-amber-800 mt-1">
+            <p className="text-muted-foreground mt-1">
               Completa tus datos para proceder al pago seguro
             </p>
           </div>
