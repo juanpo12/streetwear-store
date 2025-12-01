@@ -405,7 +405,7 @@ export function CheckoutForm({ onBack }: CheckoutFormProps) {
                   <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                     {state.items.map((item) => (
                       <div key={item.id} className="flex gap-3 p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-card shadow-sm flex-shrink-0 relative">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-card shadow-sm shrink-0 relative">
                           <Image
                             src={item.image || "/placeholder.jpg"}
                             alt={item.name}
