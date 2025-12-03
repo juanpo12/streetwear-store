@@ -43,11 +43,17 @@ const CreateCouponSchema = z
   .refine((d) => (d.type === 'fixed_amount' ? d.value > 0 : true), {
     message: 'fixed_amount must be > 0',
   })
+  .refine((d) => (d.type === 'fixed_amount' ? d.value < 1e8 : true), {
+    message: 'fixed_amount too large',
+  })
   .refine((d) => (d.type === 'free_shipping' ? d.value === 0 : true), {
     message: 'free_shipping value must be 0',
   })
   .refine((d) => (!d.expiresAt || !d.startsAt || d.expiresAt > d.startsAt), {
     message: 'expiresAt must be after startsAt',
+  })
+  .refine((d) => (d.minimumAmount ? d.minimumAmount < 1e8 : true), {
+    message: 'minimum_amount too large',
   })
 
 export type CreateCouponInput = z.infer<typeof CreateCouponSchema>
