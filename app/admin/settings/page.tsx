@@ -13,6 +13,7 @@ import { Mail, Send, Users, Settings, Eye, Save, Download, Sparkles, Tag, User a
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useEffect } from "react"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // Mock data for subscribers
 const mockSubscribers = [
@@ -364,6 +365,7 @@ function CouponManager() {
     code: "",
     prefix: "",
     userId: "",
+    isGeneral: false,
   })
 
   const fetchList = async () => {
@@ -399,11 +401,11 @@ function CouponManager() {
       if (form.expiresAt) payload.expiresAt = new Date(form.expiresAt)
       if (form.code) payload.code = form.code
       if (form.prefix) payload.prefix = form.prefix
-      if (form.userId) payload.userId = form.userId
+      if (!form.isGeneral && form.userId) payload.userId = form.userId
       const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
       const json = await res.json()
       if (!res.ok || !json?.success) throw new Error(json?.error || `Error ${res.status}`)
-      setForm({ type: "percentage", value: 10, minimumAmount: "", usageLimit: "", startsAt: "", expiresAt: "", code: "", prefix: "", userId: "" })
+      setForm({ type: "percentage", value: 10, minimumAmount: "", usageLimit: "", startsAt: "", expiresAt: "", code: "", prefix: "", userId: "", isGeneral: false })
       await fetchList()
     } catch (e: any) {
       setError(e.message || "Error creando cupón")
@@ -490,7 +492,14 @@ function CouponManager() {
             <Label>Usuario (UUID o email)</Label>
             <div className="flex items-center gap-2">
               <UserIcon className="h-4 w-4 text-muted-foreground" />
-              <Input value={form.userId} onChange={(e) => updateField("userId", e.target.value)} placeholder="uuid o email del usuario" />
+              <Input value={form.userId} onChange={(e) => updateField("userId", e.target.value)} placeholder="uuid o email del usuario" disabled={form.isGeneral} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>General (todos pueden usar)</Label>
+            <div className="flex items-center gap-2">
+              <Checkbox checked={form.isGeneral} onCheckedChange={(v) => updateField("isGeneral", Boolean(v))} />
+              <span className="text-sm text-muted-foreground">Si está activo, no se vincula a usuario</span>
             </div>
           </div>
           <div className="md:col-span-3 flex justify-end">
@@ -538,6 +547,7 @@ function CouponManager() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Input className="max-w-[220px]" placeholder="uuid o email" defaultValue={c.userId ?? ""} onBlur={(e) => linkUser(c.id, e.currentTarget.value || null)} />
+                        <Button variant="outline" size="sm" onClick={() => linkUser(c.id, null)}>Hacer general</Button>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
