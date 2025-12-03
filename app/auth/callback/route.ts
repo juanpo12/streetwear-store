@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
           const v: any = setting[0]?.value
           if (v && v.enabled) {
             const startsAt = new Date()
-            const expiresAt = v.expiresInDays ? new Date(Date.now() + v.expiresInDays * 24 * 60 * 60 * 1000) : null
+            const expiresAt = v.expiresInDays ? new Date(Date.now() + v.expiresInDays * 24 * 60 * 60 * 1000) : undefined
             const codeGen = generateCode({ prefix: v.prefix || 'WELCOME' })
             await createCoupon({
               type: v.type,
