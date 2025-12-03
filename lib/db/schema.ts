@@ -358,6 +358,13 @@ export const cartsRelations = relations(carts, ({ one, many }) => ({
   items: many(cartItems),
 }))
 
+// App settings key-value
+export const appSettings = pgTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: jsonb('value'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
 export const cartItemsRelations = relations(cartItems, ({ one }) => ({
   cart: one(carts, {
     fields: [cartItems.cartId],

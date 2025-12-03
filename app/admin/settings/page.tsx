@@ -239,6 +239,7 @@ export default function AdminSettings() {
 
           {/* Coupons Tab */}
           <TabsContent value="coupons" className="space-y-6">
+            <AutoCouponSettings />
             <CouponManager />
           </TabsContent>
 
@@ -571,5 +572,132 @@ function CouponManager() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+function AutoCouponSettings() {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [ok, setOk] = useState<string | null>(null)
+  const [state, setState] = useState({
+    enabled: false,
+    type: "percentage" as "percentage" | "fixed_amount" | "free_shipping",
+    value: 10,
+    minimumAmount: "",
+    prefix: "WELCOME",
+    expiresInDays: "30",
+  })
+
+  const setField = (k: string, v: any) => setState(prev => ({ ...prev, [k]: v }))
+
+  useEffect(() => {
+    let ignore = false
+    const fetchSettings = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await fetch('/api/admin/app-settings')
+        const json = await res.json()
+        if (!ignore && res.ok && json?.success) {
+          const v = json.data?.newUserCoupon || null
+          if (v) {
+            setState({
+              enabled: Boolean(v.enabled),
+              type: v.type || "percentage",
+              value: Number(v.value ?? 10),
+              minimumAmount: v.minimumAmount != null ? String(v.minimumAmount) : "",
+              prefix: v.prefix || "WELCOME",
+              expiresInDays: v.expiresInDays != null ? String(v.expiresInDays) : "30",
+            })
+          }
+        }
+      } catch (e: any) {
+        if (!ignore) setError(e?.message || 'Error cargando configuración')
+      } finally {
+        if (!ignore) setLoading(false)
+      }
+    }
+    fetchSettings()
+    return () => { ignore = true }
+  }, [])
+
+  const save = async () => {
+    try {
+      setSaving(true)
+      setError(null)
+      setOk(null)
+      const payload = {
+        newUserCoupon: {
+          enabled: Boolean(state.enabled),
+          type: state.type,
+          value: Number(state.value),
+          minimumAmount: state.minimumAmount ? Number(state.minimumAmount) : undefined,
+          prefix: state.prefix || undefined,
+          expiresInDays: state.expiresInDays ? Number(state.expiresInDays) : undefined,
+        }
+      }
+      const res = await fetch('/api/admin/app-settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const json = await res.json()
+      if (!res.ok || !json?.success) throw new Error(json?.error || `Error ${res.status}`)
+      setOk('Configuración guardada')
+    } catch (e: any) {
+      setError(e?.message || 'Error guardando configuración')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" /> CUPÓN AUTOMÁTICO NUEVOS USUARIOS
+          <Badge className={loading ? "" : (state.enabled ? "bg-green-600 text-white" : "bg-muted text-muted-foreground")}> 
+            {loading ? 'Cargando…' : (state.enabled ? 'Activo' : 'Inactivo')}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid md:grid-cols-3 gap-4">
+        <div className="space-y-2 md:col-span-3">
+          <Label>Activar</Label>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={state.enabled} onCheckedChange={(v) => setField('enabled', Boolean(v))} />
+            <span className="text-sm text-muted-foreground">Si está activo, se emitirá un cupón al registrarse</span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Tipo</Label>
+          <Select value={state.type} onValueChange={(v) => setField('type', v)}>
+            <SelectTrigger><SelectValue placeholder="Seleccionar tipo" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="percentage">Porcentaje</SelectItem>
+              <SelectItem value="fixed_amount">Monto fijo</SelectItem>
+              <SelectItem value="free_shipping">Envío gratis</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Valor</Label>
+          <Input type="number" value={state.value} onChange={(e) => setField('value', Number(e.target.value))} />
+        </div>
+        <div className="space-y-2">
+          <Label>Mínimo</Label>
+          <Input type="number" placeholder="Opcional" value={state.minimumAmount} onChange={(e) => setField('minimumAmount', e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label>Prefijo código</Label>
+          <Input value={state.prefix} onChange={(e) => setField('prefix', e.target.value)} placeholder="WELCOME" />
+        </div>
+        <div className="space-y-2">
+          <Label>Expira en días</Label>
+          <Input type="number" placeholder="Opcional" value={state.expiresInDays} onChange={(e) => setField('expiresInDays', e.target.value)} />
+        </div>
+        <div className="md:col-span-3 flex justify-end gap-3">
+          {error && <div className="text-sm text-red-500">{error}</div>}
+          {ok && <div className="text-sm text-green-600">{ok}</div>}
+          <Button onClick={save} disabled={saving || loading} className="flex items-center gap-2"><Save className="h-4 w-4" /> {saving ? 'Guardando...' : 'Guardar configuración'}</Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

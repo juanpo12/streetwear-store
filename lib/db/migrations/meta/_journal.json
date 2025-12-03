@@ -29,6 +29,13 @@
       "when": 1764569038171,
       "tag": "0003_coupons_per_user",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1764721465716,
+      "tag": "0004_flat_justice",
+      "breakpoints": true
     }
   ]
 }
