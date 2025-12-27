@@ -6,6 +6,7 @@ export function CTASection() {
   const redirectToRegister = () => {
     window.location.href = "/auth/register"
   }
+  
   return (
     <section className="py-20 bg-primary text-primary-foreground">
       <div className="container mx-auto px-4 text-center">
