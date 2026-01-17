@@ -410,6 +410,34 @@ export async function POST(request: Request) {
       sizeColorStocks,
     } = body
 
+    if (!name || typeof price !== 'number' || price <= 0) {
+      return NextResponse.json({ success: false, error: 'Nombre y precio válido son requeridos' }, { status: 400 })
+    }
+    if (Array.isArray(sizes) && sizes.length > 0) {
+      const invalidNumeric = sizes.some((s: any) => {
+        const v = String(s).trim()
+        if (/^\d+$/.test(v)) return parseInt(v) <= 0
+        return v.length === 0
+      })
+      if (invalidNumeric) {
+        return NextResponse.json({ success: false, error: 'Talles inválidos: deben ser texto no vacío o números positivos' }, { status: 400 })
+      }
+    }
+    if (sizeStocks && typeof sizeStocks === 'object') {
+      const invalidStock = Object.values(sizeStocks).some((v) => typeof v !== 'number' || v < 0 || !Number.isFinite(v))
+      if (invalidStock) {
+        return NextResponse.json({ success: false, error: 'Stock por talle inválido: debe ser número no negativo' }, { status: 400 })
+      }
+    }
+    if (sizeColorStocks && typeof sizeColorStocks === 'object') {
+      const invalidNested = Object.values(sizeColorStocks).some((perColor: any) =>
+        Object.values(perColor || {}).some((v: any) => typeof v !== 'number' || v < 0 || !Number.isFinite(v))
+      )
+      if (invalidNested) {
+        return NextResponse.json({ success: false, error: 'Stock por talle y color inválido: debe ser número no negativo' }, { status: 400 })
+      }
+    }
+
     // Generador simple de SKU
     const generateSKU = (productName: string) => {
       const prefix = productName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6)
@@ -460,7 +488,9 @@ export async function POST(request: Request) {
 
     // Construir variantes según talles y colores
     const defaultSizes = ['S','M','L','XL','XXL']
-    const sizesToUse = Array.isArray(sizes) && sizes.length > 0 ? sizes : defaultSizes
+    const sizesToUse = Array.isArray(sizes) && sizes.length > 0
+      ? Array.from(new Set(sizes.map((s: any) => String(s).trim()).filter(Boolean)))
+      : defaultSizes
     const colorsToUse = Array.isArray(colors) && colors.length > 0 ? colors : ['Color Único']
 
     const variants: any[] = []

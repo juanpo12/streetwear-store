@@ -15,6 +15,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useCategories, useSizes, useColors } from "@/hooks/use-products"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 interface UploadedImage {
   originalName: string
@@ -44,12 +45,17 @@ export default function EditProductPage() {
     isFeatured: false,
     sizes: [] as string[],
     colors: [] as string[],
+    sizeMode: "letters" as "letters" | "numeric",
+    numericSizes: [] as string[],
   })
 
   const defaultSizes = ['S','M','L','XL','XXL']
   const [isSingleModel, setIsSingleModel] = useState(false)
   const [sizeStocks, setSizeStocks] = useState<Record<string, number>>({})
   const [sizeColorStocks, setSizeColorStocks] = useState<Record<string, Record<string, number>>>({})
+  const [numericSizeStocks, setNumericSizeStocks] = useState<Record<string, number>>({})
+  const [numericSizeColorStocks, setNumericSizeColorStocks] = useState<Record<string, Record<string, number>>>({})
+  const [numericInput, setNumericInput] = useState<string>("")
   const [existingImages, setExistingImages] = useState<string[]>([])
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
   const [saving, setSaving] = useState(false)
@@ -74,6 +80,8 @@ export default function EditProductPage() {
         const p = json.data
         // Mapear categoría por nombre -> id si existe
         const catId = categories.find(c => c.name === p.category)?.id || ""
+        const sizesArray = Array.isArray(p.sizes) ? p.sizes : []
+        const isLettersMode = sizesArray.length === 0 || sizesArray.every((s: string) => defaultSizes.includes(s))
         setFormData({
           name: p.name || "",
           description: p.description || "",
@@ -86,8 +94,10 @@ export default function EditProductPage() {
           metaTitle: "",
           metaDescription: "",
           isFeatured: !!p.featured,
-          sizes: Array.isArray(p.sizes) ? p.sizes : [],
+          sizes: sizesArray,
           colors: Array.isArray(p.colors) ? p.colors : [],
+          sizeMode: isLettersMode ? "letters" : "numeric",
+          numericSizes: isLettersMode ? [] : sizesArray,
         })
         const imgs = Array.isArray(p.images) ? p.images.map((i: any) => i.url || i) : []
         setExistingImages(imgs)
@@ -102,17 +112,27 @@ export default function EditProductPage() {
           initialColorStocks[color][size] = v.inventoryQuantity || 0
         })
         setSizeColorStocks(initialColorStocks)
+        setNumericSizeColorStocks(initialColorStocks)
 
         const single = ((p.colors || []).length <= 1)
         setIsSingleModel(single)
         if (single) {
           const uniqueColor = Object.keys(initialColorStocks)[0] || 'Color Único'
-          const stocks: Record<string, number> = {}
-          defaultSizes.forEach(s => {
-            const v = initialColorStocks[uniqueColor]?.[s]
-            if (typeof v === 'number') stocks[s] = v
-          })
-          setSizeStocks(stocks)
+          if (isLettersMode) {
+            const stocks: Record<string, number> = {}
+            defaultSizes.forEach(s => {
+              const v = initialColorStocks[uniqueColor]?.[s]
+              if (typeof v === 'number') stocks[s] = v
+            })
+            setSizeStocks(stocks)
+          } else {
+            const stocksNum: Record<string, number> = {}
+            sizesArray.forEach(s => {
+              const v = initialColorStocks[uniqueColor]?.[s]
+              if (typeof v === 'number') stocksNum[s] = v
+            })
+            setNumericSizeStocks(stocksNum)
+          }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -143,6 +163,15 @@ export default function EditProductPage() {
     setSuccess(false)
 
     try {
+      const activeSizes = formData.sizeMode === "letters" ? defaultSizes : formData.numericSizes
+      if (formData.sizeMode === "numeric") {
+        const invalid = activeSizes.some(s => !/^\d+$/.test(String(s)) || parseInt(String(s)) <= 0)
+        if (invalid) {
+          setError("Las tallas numéricas deben ser números positivos")
+          setSaving(false)
+          return
+        }
+      }
       const payload = {
         name: formData.name,
         description: formData.description,
@@ -156,9 +185,10 @@ export default function EditProductPage() {
         metaDescription: formData.metaDescription || undefined,
         isFeatured: formData.isFeatured,
         images: finalImages,
+        sizes: activeSizes,
         colors: isSingleModel ? [] : formData.colors,
-        sizeStocks: isSingleModel ? sizeStocks : undefined,
-        sizeColorStocks: !isSingleModel ? sizeColorStocks : undefined,
+        sizeStocks: isSingleModel ? (formData.sizeMode === "letters" ? sizeStocks : numericSizeStocks) : undefined,
+        sizeColorStocks: !isSingleModel ? (formData.sizeMode === "letters" ? sizeColorStocks : numericSizeColorStocks) : undefined,
       }
 
       const res = await fetch(`/api/products/${productId}`, {
@@ -287,71 +317,192 @@ export default function EditProductPage() {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>VARIANTS</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="single-model" checked={isSingleModel} onCheckedChange={(v) => setIsSingleModel(!!v)} />
-                    <Label htmlFor="single-model">Único modelo (sin colores)</Label>
-                  </div>
-
-                  {!isSingleModel && (
-                    <div>
-                      <Label>Available Colors</Label>
-                      <CreatableSelect
-                        options={colors.map(color => ({ id: color.id, name: color.name }))}
-                        value={formData.colors}
-                        onChange={(value) => {
-                          setFormData({ ...formData, colors: value })
-                          setSizeColorStocks(prev => {
-                            const copy = { ...prev }
-                            value.forEach((c: string) => { if (!copy[c]) copy[c] = {} })
-                            return copy
-                          })
+              <CardHeader>
+                <CardTitle>VARIANTS</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Modo de talles</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={formData.sizeMode}
+                    onValueChange={(val) => {
+                      if (!val) return
+                      setFormData(prev => ({ ...prev, sizeMode: val as "letters" | "numeric" }))
+                    }}
+                    className="w-full"
+                  >
+                    <ToggleGroupItem value="letters">Letras (S, M, L, XL, XXL)</ToggleGroupItem>
+                    <ToggleGroupItem value="numeric">Números (46, 48, 50)</ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                {formData.sizeMode === "numeric" && (
+                  <div className="space-y-3">
+                    <Label>Talles numéricos</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="numeric-size-input"
+                        type="number"
+                        placeholder="Ej.: 46"
+                        value={numericInput}
+                        min={1}
+                        onChange={(e) => setNumericInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const val = numericInput.trim()
+                            if (!/^\d+$/.test(val) || parseInt(val) <= 0) return
+                            setFormData(prev => {
+                              const exists = prev.numericSizes.includes(val)
+                              const newSizes = exists ? prev.numericSizes : [...prev.numericSizes, val]
+                              return { ...prev, numericSizes: newSizes }
+                            })
+                            setNumericInput("")
+                          }
                         }}
-                        onCreateOption={async (name) => {
-                          await createColor({ name })
-                        }}
-                        placeholder={colorsLoading ? "Loading colors..." : "Select or create colors"}
-                        loading={colorsLoading}
-                        multiple={true}
                       />
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const val = numericInput.trim()
+                          if (!/^\d+$/.test(val) || parseInt(val) <= 0) return
+                          setFormData(prev => {
+                            const exists = prev.numericSizes.includes(val)
+                            const newSizes = exists ? prev.numericSizes : [...prev.numericSizes, val]
+                            return { ...prev, numericSizes: newSizes }
+                          })
+                          setNumericInput("")
+                        }}
+                      >
+                        Agregar
+                      </Button>
                     </div>
-                  )}
+                    {formData.numericSizes.length > 0 ? (
+                      <div className="flex gap-2 flex-wrap">
+                        {formData.numericSizes.map((sz) => (
+                          <span key={`chip-${sz}`} className="px-2 py-1 text-xs rounded border">{sz}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Agregá talles numéricos y luego completá el stock.</p>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Checkbox id="single-model" checked={isSingleModel} onCheckedChange={(v) => {
+                    const val = !!v
+                    if (val) {
+                      setFormData(prev => ({ ...prev, colors: [] }))
+                      setSizeColorStocks({})
+                      setNumericSizeColorStocks({})
+                    }
+                    setIsSingleModel(val)
+                  }} />
+                  <Label htmlFor="single-model">Único modelo (sin colores)</Label>
+                </div>
 
-                  {isSingleModel ? (
-                    <div className="mt-4">
-                      <Label>Stock por talle</Label>
+                {!isSingleModel && (
+                  <div>
+                    <Label>Available Colors</Label>
+                    <CreatableSelect
+                      options={colors.map(color => ({ id: color.id, name: color.name }))}
+                      value={formData.colors}
+                      onChange={(value) => {
+                        setFormData({ ...formData, colors: value })
+                        setSizeColorStocks(prev => {
+                          const copy = { ...prev }
+                          value.forEach((c: string) => { if (!copy[c]) copy[c] = {} })
+                          return copy
+                        })
+                        setNumericSizeColorStocks(prev => {
+                          const copy = { ...prev }
+                          value.forEach((c: string) => { if (!copy[c]) copy[c] = {} })
+                          return copy
+                        })
+                      }}
+                      onCreateOption={async (name) => {
+                        await createColor({ name })
+                      }}
+                      placeholder={colorsLoading ? "Loading colors..." : "Select or create colors"}
+                      loading={colorsLoading}
+                      multiple={true}
+                    />
+                  </div>
+                )}
+
+                {isSingleModel && formData.sizeMode === "letters" ? (
+                  <div className="mt-4">
+                    <Label>Stock por talle</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {defaultSizes.map(size => (
+                        <div key={size} className="flex items-center gap-2">
+                          <span className="w-10">{size}</span>
+                          <Input type="number" min={0} value={sizeStocks[size] ?? 0} onChange={(e) => setSizeStocks({ ...sizeStocks, [size]: parseInt(e.target.value) || 0 })} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {isSingleModel && formData.sizeMode === "numeric" ? (
+                  <div className="mt-4">
+                    <Label>Stock por talle numérico</Label>
+                    {formData.numericSizes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Agregá talles numéricos para cargar stock.</p>
+                    ) : (
                       <div className="grid grid-cols-3 gap-3">
-                        {defaultSizes.map(size => (
-                          <div key={size} className="flex items-center gap-2">
+                        {formData.numericSizes.map(size => (
+                          <div key={`num-${size}`} className="flex items-center gap-2">
                             <span className="w-10">{size}</span>
-                            <Input type="number" min={0} value={sizeStocks[size] ?? 0} onChange={(e) => setSizeStocks({ ...sizeStocks, [size]: parseInt(e.target.value) || 0 })} />
+                            <Input type="number" min={0} value={numericSizeStocks[size] ?? 0} onChange={(e) => setNumericSizeStocks({ ...numericSizeStocks, [size]: parseInt(e.target.value) || 0 })} />
                           </div>
                         ))}
                       </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4">
-                      <Label>Stock por talle y color</Label>
-                      {formData.colors.map(color => (
-                        <div key={color} className="mb-3">
+                    )}
+                  </div>
+                ) : null}
+                {!isSingleModel && formData.sizeMode === "letters" ? (
+                  <div className="mt-4">
+                    <Label>Stock por talle y color</Label>
+                    {formData.colors.map(color => (
+                      <div key={color} className="mb-3">
+                        <div className="font-medium mb-1">{color}</div>
+                        <div className="grid grid-cols-3 gap-3">
+                          {defaultSizes.map(size => (
+                            <div key={size} className="flex items-center gap-2">
+                              <span className="w-10">{size}</span>
+                              <Input type="number" min={0} value={sizeColorStocks[color]?.[size] ?? 0} onChange={(e) => setSizeColorStocks(prev => ({ ...prev, [color]: { ...(prev[color] || {}), [size]: parseInt(e.target.value) || 0 } }))} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {!isSingleModel && formData.sizeMode === "numeric" ? (
+                  <div className="mt-4">
+                    <Label>Stock por talle numérico y color</Label>
+                    {formData.colors.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Seleccioná colores para cargar stock por color+talle.</p>
+                    ) : formData.numericSizes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Agregá talles numéricos para cargar stock.</p>
+                    ) : (
+                      formData.colors.map(color => (
+                        <div key={`num-${color}`} className="mb-3">
                           <div className="font-medium mb-1">{color}</div>
                           <div className="grid grid-cols-3 gap-3">
-                            {defaultSizes.map(size => (
-                              <div key={size} className="flex items-center gap-2">
+                            {formData.numericSizes.map(size => (
+                              <div key={`num-${color}-${size}`} className="flex items-center gap-2">
                                 <span className="w-10">{size}</span>
-                                <Input type="number" min={0} value={sizeColorStocks[color]?.[size] ?? 0} onChange={(e) => setSizeColorStocks(prev => ({ ...prev, [color]: { ...(prev[color] || {}), [size]: parseInt(e.target.value) || 0 } }))} />
+                                <Input type="number" min={0} value={numericSizeColorStocks[color]?.[size] ?? 0} onChange={(e) => setNumericSizeColorStocks(prev => ({ ...prev, [color]: { ...(prev[color] || {}), [size]: parseInt(e.target.value) || 0 } }))} />
                               </div>
                             ))}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                      ))
+                    )}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>VARIANTS</CardTitle>

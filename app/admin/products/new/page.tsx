@@ -16,6 +16,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useCategories, useSizes, useColors, useCreateProduct } from "@/hooks/use-products"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -32,18 +33,19 @@ export default function NewProductPage() {
     metaTitle: "",
     metaDescription: "",
     isFeatured: false,
-    // Siempre usamos el set de talles por defecto
     sizes: ["S","M","L","XL","XXL"] as string[],
-    // Toggle para definir si el producto es de "único modelo" (sin colores)
     isSingleModel: false,
     colors: [] as string[],
-    // Stock común por talle (se usa cuando es "único modelo")
     sizeStocks: { S: 0, M: 0, L: 0, XL: 0, XXL: 0 } as Record<string, number>,
-    // Stock por color+talle (se usa cuando NO es "único modelo")
     sizeColorStocks: {} as Record<string, Record<string, number>>,
+    sizeMode: "letters" as "letters" | "numeric",
+    numericSizes: [] as string[],
+    numericSizeStocks: {} as Record<string, number>,
+    numericSizeColorStocks: {} as Record<string, Record<string, number>>,
   })
 
   const [productImages, setProductImages] = useState<{url: string, originalName: string, fileName: string, filePath: string, size: number, type: string}[]>([])
+  const [numericInput, setNumericInput] = useState<string>("")
 
   // Usar los hooks personalizados
   const { categories, loading: categoriesLoading, error: categoriesError, createCategory } = useCategories()
@@ -73,9 +75,17 @@ export default function NewProductPage() {
     }
 
     const isSingleModel = !!formData.isSingleModel
+    const activeSizes = formData.sizeMode === "letters" ? ["S","M","L","XL","XXL"] : formData.numericSizes
+    if (formData.sizeMode === "numeric") {
+      const invalid = activeSizes.some(s => !/^\d+$/.test(String(s)) || parseInt(String(s)) <= 0)
+      if (invalid) {
+        alert("Las tallas numéricas deben ser números positivos")
+        return
+      }
+    }
     const totalStock = isSingleModel
-      ? Object.values(formData.sizeStocks || {}).reduce((sum, v) => sum + (Number(v) || 0), 0)
-      : Object.values(formData.sizeColorStocks || {}).reduce((sum, perColor) => sum + Object.values(perColor || {}).reduce((s, v) => s + (Number(v) || 0), 0), 0)
+      ? Object.values(formData.sizeMode === "letters" ? formData.sizeStocks || {} : formData.numericSizeStocks || {}).reduce((sum, v) => sum + (Number(v) || 0), 0)
+      : Object.values(formData.sizeMode === "letters" ? formData.sizeColorStocks || {} : formData.numericSizeColorStocks || {}).reduce((sum, perColor) => sum + Object.values(perColor || {}).reduce((s, v) => s + (Number(v) || 0), 0), 0)
 
     await createProduct({
       name: formData.name,
@@ -90,13 +100,10 @@ export default function NewProductPage() {
       metaDescription: formData.metaDescription,
       isFeatured: formData.isFeatured,
       images: productImages.map(img => img.url),
-      // Talles siempre por defecto
-      sizes: ["S","M","L","XL","XXL"],
-      // Si es único modelo, no enviamos colores; el backend usará "Color Único" por defecto
+      sizes: activeSizes,
       colors: isSingleModel ? [] : formData.colors,
-      // Enviar stock según corresponda
-      sizeStocks: isSingleModel ? formData.sizeStocks : undefined,
-      sizeColorStocks: isSingleModel ? undefined : formData.sizeColorStocks,
+      sizeStocks: isSingleModel ? (formData.sizeMode === "letters" ? formData.sizeStocks : formData.numericSizeStocks) : undefined,
+      sizeColorStocks: isSingleModel ? undefined : (formData.sizeMode === "letters" ? formData.sizeColorStocks : formData.numericSizeColorStocks),
     })
   }
 
@@ -201,6 +208,72 @@ export default function NewProductPage() {
                   <CardTitle>VARIANTS</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Modo de talles</Label>
+                    <ToggleGroup
+                      type="single"
+                      value={formData.sizeMode}
+                      onValueChange={(val) => {
+                        if (!val) return
+                        setFormData(prev => ({ ...prev, sizeMode: val as "letters" | "numeric" }))
+                      }}
+                      className="w-full"
+                    >
+                      <ToggleGroupItem value="letters">Letras (S, M, L, XL, XXL)</ToggleGroupItem>
+                      <ToggleGroupItem value="numeric">Números (46, 48, 50)</ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+                  {formData.sizeMode === "numeric" && (
+                    <div className="space-y-3">
+                      <Label>Talles numéricos</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="numeric-size-input"
+                          type="number"
+                          placeholder="Ej.: 46"
+                          value={numericInput}
+                          min={1}
+                          onChange={(e) => setNumericInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const val = numericInput.trim()
+                              if (!/^\d+$/.test(val) || parseInt(val) <= 0) return
+                              setFormData(prev => {
+                                const exists = prev.numericSizes.includes(val)
+                                const newSizes = exists ? prev.numericSizes : [...prev.numericSizes, val]
+                                return { ...prev, numericSizes: newSizes }
+                              })
+                              setNumericInput("")
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const val = numericInput.trim()
+                            if (!/^\d+$/.test(val) || parseInt(val) <= 0) return
+                            setFormData(prev => {
+                              const exists = prev.numericSizes.includes(val)
+                              const newSizes = exists ? prev.numericSizes : [...prev.numericSizes, val]
+                              return { ...prev, numericSizes: newSizes }
+                            })
+                            setNumericInput("")
+                          }}
+                        >
+                          Agregar
+                        </Button>
+                      </div>
+                      {formData.numericSizes.length > 0 ? (
+                        <div className="flex gap-2 flex-wrap">
+                          {formData.numericSizes.map((sz) => (
+                            <span key={`chip-${sz}`} className="px-2 py-1 text-xs rounded border">{sz}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Agregá talles numéricos y luego completá el stock.</p>
+                      )}
+                    </div>
+                  )}
                   {/* Toggle Único modelo */}
                   <div className="flex items-center gap-3">
                     <Checkbox
@@ -211,7 +284,6 @@ export default function NewProductPage() {
                         setFormData(prev => ({
                           ...prev,
                           isSingleModel: val,
-                          // Si se pasa a único modelo, limpiamos colores y stock por color
                           colors: val ? [] : prev.colors,
                           sizeColorStocks: val ? {} : prev.sizeColorStocks,
                         }))
@@ -238,8 +310,7 @@ export default function NewProductPage() {
                     </div>
                   )}
 
-                  {/* Si es único modelo: stock común por talle */}
-                  {formData.isSingleModel && (
+                  {formData.sizeMode === "letters" && formData.isSingleModel && (
                     <div>
                       <Label>Stock por talle</Label>
                       <div className="grid grid-cols-5 gap-3">
@@ -259,8 +330,31 @@ export default function NewProductPage() {
                     </div>
                   )}
 
-                  {/* Si NO es único modelo: stock por color+talle */}
-                  {!formData.isSingleModel && (
+                  {formData.sizeMode === "numeric" && formData.isSingleModel && (
+                    <div className="space-y-3">
+                      <Label>Stock por talle numérico</Label>
+                      {formData.numericSizes.length > 0 ? (
+                        <div className="grid grid-cols-5 gap-3">
+                          {formData.numericSizes.map((sz) => (
+                            <div key={sz} className="space-y-1">
+                              <Label htmlFor={`stock-num-${sz}`}>{sz}</Label>
+                              <Input
+                                id={`stock-num-${sz}`}
+                                type="number"
+                                value={String(formData.numericSizeStocks[sz] ?? 0)}
+                                onChange={(e) => setFormData({ ...formData, numericSizeStocks: { ...formData.numericSizeStocks, [sz]: Number(e.target.value) } })}
+                                min={0}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Agregá talles numéricos para cargar stock.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {!formData.isSingleModel && formData.sizeMode === "letters" && (
                     <div>
                       <Label>Stock por talle y color</Label>
                       {formData.colors.length === 0 ? (
@@ -290,6 +384,54 @@ export default function NewProductPage() {
                                               ...prev.sizeColorStocks,
                                               [colorName]: {
                                                 ...prev.sizeColorStocks[colorName],
+                                                [sz]: qty,
+                                              },
+                                            },
+                                          }))
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!formData.isSingleModel && formData.sizeMode === "numeric" && (
+                    <div className="space-y-3">
+                      <Label>Stock por talle numérico y color</Label>
+                      {formData.colors.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Seleccioná colores para cargar stock por color+talle.</p>
+                      ) : formData.numericSizes.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Agregá talles numéricos para cargar stock.</p>
+                      ) : (
+                        <div className="space-y-6">
+                          {formData.colors.map((colorName) => {
+                            const sizesToUse = formData.numericSizes
+                            const perColor = formData.numericSizeColorStocks[colorName] || {}
+                            return (
+                              <div key={`num-${colorName}`} className="space-y-2">
+                                <Label>{colorName}</Label>
+                                <div className="grid grid-cols-5 gap-3">
+                                  {sizesToUse.map((sz) => (
+                                    <div key={`num-${colorName}-${sz}`} className="space-y-1">
+                                      <Label htmlFor={`stock-num-${colorName}-${sz}`}>{sz}</Label>
+                                      <Input
+                                        id={`stock-num-${colorName}-${sz}`}
+                                        type="number"
+                                        value={String(perColor[sz] ?? 0)}
+                                        min={0}
+                                        onChange={(e) => {
+                                          const qty = Number(e.target.value)
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            numericSizeColorStocks: {
+                                              ...prev.numericSizeColorStocks,
+                                              [colorName]: {
+                                                ...prev.numericSizeColorStocks[colorName],
                                                 [sz]: qty,
                                               },
                                             },
