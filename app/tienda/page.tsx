@@ -16,7 +16,7 @@ const TiendaPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL")
   const [currentPage, setCurrentPage] = useState<number>(1)
 
-  const allProducts = products || []
+  const allProducts = useMemo(() => products || [], [products])
 
   const categories = useMemo(() => {
     const cats = new Set<string>(["ALL"])

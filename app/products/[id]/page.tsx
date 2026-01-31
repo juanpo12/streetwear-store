@@ -410,8 +410,8 @@ export default function ProductPage() {
             </div>
 
             {/* Price & Stock */}
-            <div className="flex items-center justify-between p-6 rounded-2xl bg-muted/30 border-2 border-muted">
-              <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-6 rounded-2xl bg-muted/30 border-2 border-muted">
+              <div className="w-full sm:w-auto">
                 <div className="flex items-baseline gap-2">
                   <div className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                     {product.price}
@@ -426,7 +426,7 @@ export default function ProductPage() {
                   Impuestos incluidos
                 </div>
               </div>
-              <div className="text-right">
+              <div className="w-full sm:w-auto text-left sm:text-right">
                 <div className={`text-sm font-semibold px-4 py-2 rounded-full ${
                   (((product.variants || []).reduce((sum: number, v: any) => sum + (v.inventoryQuantity || 0), 0)) || (product.stock || 0)) > 10 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
                   (((product.variants || []).reduce((sum: number, v: any) => sum + (v.inventoryQuantity || 0), 0)) || (product.stock || 0)) > 0 ? 'bg-accent/15 text-accent dark:bg-accent/20 dark:text-accent' : 
