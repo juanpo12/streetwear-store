@@ -22,19 +22,14 @@ async function isDatabaseAvailable(): Promise<boolean> {
   }
 }
 
-// Función para formatear precio a pesos argentinos
-function formatPriceToARS(priceUSD: number): string {
-  // Convertir USD a ARS (usando una tasa de cambio aproximada)
-  // En un entorno real, esto debería venir de una API de cambio
-  const exchangeRate = 1000 // 1 USD = 1000 ARS aproximadamente
-  const priceARS = priceUSD * exchangeRate
-  
+// Función para formatear precio sin alterar el valor original
+function formatPriceToARS(price: number): string {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
-  }).format(priceARS)
+  }).format(price)
 }
 
 // Función para obtener URL pública de imagen de Supabase Storage
