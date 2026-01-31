@@ -7,6 +7,14 @@ import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight, Tag, Package, AlertTri
 import { Badge } from "@/components/ui/badge"
 import { CheckoutForm } from "./checkout/checkout-form"
 import Image from "next/image"
+function formatPriceToARS(price: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price)
+}
 
 export function CartSidebar() {
   const { state, closeCart, updateQuantity, removeItem, totalPrice, totalItems } = useCart()
@@ -19,6 +27,8 @@ export function CartSidebar() {
   const handleBackToCart = () => {
     setShowCheckout(false)
   }
+
+  const formattedTotalPrice = formatPriceToARS(totalPrice)
 
   if (!state.isOpen) return null
 
@@ -154,7 +164,7 @@ export function CartSidebar() {
 
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-primary">
-                          ${item.price.toFixed(2)}
+                          {formatPriceToARS(item.price)}
                         </span>
                         
                         {/* Quantity Controls */}
@@ -213,7 +223,7 @@ export function CartSidebar() {
 
                       {/* Subtotal */}
                       <div className="text-xs text-muted-foreground">
-                        Subtotal: ${(item.price * item.quantity).toFixed(2)}
+                        Subtotal: {formatPriceToARS(item.price * item.quantity)}
                       </div>
                     </div>
                   </div>
@@ -241,7 +251,7 @@ export function CartSidebar() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span>{formattedTotalPrice}</span>
                 </div>
                 {/* <div className="flex justify-between text-muted-foreground">
                   <span>Envío</span>
@@ -255,7 +265,7 @@ export function CartSidebar() {
               <div className="flex justify-between items-center py-4 border-t border-b">
                 <span className="text-lg font-bold">TOTAL</span>
                 <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  $ {totalPrice.toFixed(2)}
+                  {formattedTotalPrice}
                 </span>
               </div>
 
