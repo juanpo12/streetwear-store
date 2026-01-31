@@ -148,7 +148,7 @@ export default function ProductPage() {
     if (!product) return
     
     const productForFavorites = {
-      id: parseInt(product.id),
+      id: product.id,
       name: product.name,
       price: product.priceNumeric,
       image: product.image,
@@ -160,8 +160,8 @@ export default function ProductPage() {
       featured: product.featured
     }
     
-    if (isFavorite(parseInt(product.id))) {
-      removeFromFavorites(parseInt(product.id))
+    if (isFavorite(product.id)) {
+      removeFromFavorites(product.id)
     } else {
       addToFavorites(productForFavorites)
     }
@@ -550,7 +550,7 @@ export default function ProductPage() {
                 >
                   <Heart 
                     className={`h-5 w-5 mr-2 transition-all ${
-                      isFavorite(parseInt(product.id)) 
+                      isFavorite(product.id) 
                         ? "fill-red-500 text-red-500 scale-110" 
                         : ""
                     }`} 

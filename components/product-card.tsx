@@ -25,7 +25,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites()
-  const isProductFavorite = isFavorite(Number(product.id))
+  const isProductFavorite = isFavorite(String(product.id))
   const [imageLoaded, setImageLoaded] = useState(false)
 
   const handleBuyClick = (e: React.MouseEvent) => {
@@ -37,11 +37,10 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation()
     
     if (isProductFavorite) {
-      removeFromFavorites(Number(product.id))
+      removeFromFavorites(String(product.id))
     } else {
-      // Normalizar para favoritos: precio numérico si es posible
       const normalized = {
-        id: Number(product.id),
+        id: String(product.id),
         name: product.name,
         price: typeof product.price === 'number' ? product.price : parseFloat(String(product.price).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
         image: product.image,

@@ -179,7 +179,7 @@ function ProfileContent() {
                 </Button>
                 
                 <Button variant="outline" asChild>
-                  <a href="/wishlist">Lista de Deseos</a>
+                  <a href="/profile/favorites">Lista de Deseos</a>
                 </Button>
                 
                 <Button variant="outline" asChild>
