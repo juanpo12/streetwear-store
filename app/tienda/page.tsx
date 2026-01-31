@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useProducts } from "@/hooks/use-products"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 const ITEMS_PER_PAGE = 12
 
 const TiendaPage: React.FC = () => {
@@ -66,8 +66,21 @@ const TiendaPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
-      {/* Categorías */}
-      <div className="flex flex-wrap items-center gap-2 justify-center">
+      <div className="md:hidden">
+        <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v)}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Filtrar por categoría" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat === "ALL" ? "Todas" : cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="hidden md:flex flex-wrap items-center gap-2 justify-center">
         {categories.map((cat) => (
           <motion.button
             key={cat}
