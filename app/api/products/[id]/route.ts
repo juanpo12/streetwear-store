@@ -25,7 +25,6 @@ function formatPriceToARS(price: number): string {
   }).format(price)
 }
 
-
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
