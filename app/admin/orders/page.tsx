@@ -89,7 +89,7 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
             <h1 className="text-streetwear-lg">Gestión de Órdenes</h1>
             <p className="text-muted-foreground">Seguimiento y actualización del estado de pedidos</p>
@@ -219,63 +219,65 @@ export default function OrdersPage() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
               </div>
             ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Orden</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{order.customerName || "—"}</div>
-                        <div className="text-sm text-muted-foreground">{order.email}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{order.itemsCount} items</TableCell>
-                    <TableCell>${Number(order.totalPrice)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className={getStatusColor(order.status)}>
-                          {order.status.toUpperCase()}
-                        </Badge>
-                        <Select onValueChange={(v) => handleStatusChange(order.id, v)}>
-                          <SelectTrigger className="w-[160px]">
-                            <SelectValue placeholder="Cambiar estado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pendiente</SelectItem>
-                            <SelectItem value="confirmed">Confirmado</SelectItem>
-                            <SelectItem value="shipped">Enviado</SelectItem>
-                            <SelectItem value="delivered">Entregado</SelectItem>
-                            <SelectItem value="cancelled">Cancelado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TableCell>
-                    <TableCell>{new Date(order.createdAt).toLocaleDateString("es-ES")}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href={`/admin/orders/${order.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              <div className="w-full overflow-x-auto">
+                <Table className="min-w-[800px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Orden</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{order.customerName || "—"}</div>
+                            <div className="text-sm text-muted-foreground">{order.email}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{order.itemsCount} items</TableCell>
+                        <TableCell>${Number(order.totalPrice)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className={getStatusColor(order.status)}>
+                              {order.status.toUpperCase()}
+                            </Badge>
+                            <Select onValueChange={(v) => handleStatusChange(order.id, v)}>
+                              <SelectTrigger className="w-[160px]">
+                                <SelectValue placeholder="Cambiar estado" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pendiente</SelectItem>
+                                <SelectItem value="confirmed">Confirmado</SelectItem>
+                                <SelectItem value="shipped">Enviado</SelectItem>
+                                <SelectItem value="delivered">Entregado</SelectItem>
+                                <SelectItem value="cancelled">Cancelado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TableCell>
+                        <TableCell>{new Date(order.createdAt).toLocaleDateString("es-ES")}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`/admin/orders/${order.id}`}>
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -71,7 +71,7 @@ export default function AdminSettings() {
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
             <h1 className="text-streetwear-lg">STORE SETTINGS</h1>
             <p className="text-muted-foreground">Manage your store configuration and email marketing</p>
@@ -79,7 +79,7 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="email-marketing" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             <TabsTrigger value="email-marketing" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Email Marketing
@@ -173,7 +173,7 @@ export default function AdminSettings() {
           <TabsContent value="subscribers" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+                <CardTitle className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
                     EMAIL SUBSCRIBERS ({mockSubscribers.length})
@@ -206,14 +206,14 @@ export default function AdminSettings() {
                     {mockSubscribers.map((subscriber) => (
                       <div
                         key={subscriber.id}
-                        className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
+                        className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
                           selectedSubscribers.includes(subscriber.id)
                             ? "bg-primary/10 border-primary"
                             : "hover:bg-muted/50"
                         }`}
                         onClick={() => toggleSubscriber(subscriber.id)}
                       >
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center gap-4">
                           <input
                             type="checkbox"
                             checked={selectedSubscribers.includes(subscriber.id)}
@@ -225,7 +225,7 @@ export default function AdminSettings() {
                             <p className="text-sm text-muted-foreground">{subscriber.email}</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2">
                           <Badge variant="secondary">{subscriber.status}</Badge>
                           <span className="text-sm text-muted-foreground">{subscriber.subscribed}</span>
                         </div>
@@ -518,56 +518,58 @@ function CouponManager() {
           {loading ? (
             <div className="text-sm text-muted-foreground">Cargando cupones...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Mínimo</TableHead>
-                  <TableHead>Uso</TableHead>
-                  <TableHead>Activo</TableHead>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Vigencia</TableHead>
-                  <TableHead className="w-[160px]">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.code}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.type}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.value}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.minimumAmount ?? "-"}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.usedCount}/{c.usageLimit ?? "∞"}</TableCell>
-                    <TableCell>
-                      <Button variant={c.isActive ? "outline" : "default"} size="sm" onClick={() => toggleActive(c.id, c.isActive)}>
-                        {c.isActive ? "Desactivar" : "Activar"}
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Input className="max-w-[220px]" placeholder="uuid o email" defaultValue={c.userId ?? ""} onBlur={(e) => linkUser(c.id, e.currentTarget.value || null)} />
-                        <Button variant="outline" size="sm" onClick={() => linkUser(c.id, null)}>Hacer general</Button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {c.startsAt ? new Date(c.startsAt).toLocaleString() : "-"} → {c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "-"}
-                    </TableCell>
-                    <TableCell className="flex gap-2">
-                      <Button variant="destructive" size="sm" onClick={() => remove(c.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {list.length === 0 && (
+            <div className="w-full overflow-x-auto">
+              <Table className="min-w-[900px]">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">No hay cupones aún.</TableCell>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Mínimo</TableHead>
+                    <TableHead>Uso</TableHead>
+                    <TableHead>Activo</TableHead>
+                    <TableHead>Usuario</TableHead>
+                    <TableHead>Vigencia</TableHead>
+                    <TableHead className="w-[160px]">Acciones</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {list.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">{c.code}</TableCell>
+                      <TableCell className="text-muted-foreground">{c.type}</TableCell>
+                      <TableCell className="text-muted-foreground">{c.value}</TableCell>
+                      <TableCell className="text-muted-foreground">{c.minimumAmount ?? "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{c.usedCount}/{c.usageLimit ?? "∞"}</TableCell>
+                      <TableCell>
+                        <Button variant={c.isActive ? "outline" : "default"} size="sm" onClick={() => toggleActive(c.id, c.isActive)}>
+                          {c.isActive ? "Desactivar" : "Activar"}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Input className="max-w-[220px]" placeholder="uuid o email" defaultValue={c.userId ?? ""} onBlur={(e) => linkUser(c.id, e.currentTarget.value || null)} />
+                          <Button variant="outline" size="sm" onClick={() => linkUser(c.id, null)}>Hacer general</Button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {c.startsAt ? new Date(c.startsAt).toLocaleString() : "-"} → {c.expiresAt ? new Date(c.expiresAt).toLocaleString() : "-"}
+                      </TableCell>
+                      <TableCell className="flex gap-2">
+                        <Button variant="destructive" size="sm" onClick={() => remove(c.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {list.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground">No hay cupones aún.</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

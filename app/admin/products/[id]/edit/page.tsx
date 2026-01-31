@@ -216,16 +216,18 @@ export default function EditProductPage() {
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center mb-8">
-          <Button variant="ghost" asChild className="mr-4">
-            <Link href="/admin/products">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              BACK TO PRODUCTS
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-streetwear-lg">EDIT PRODUCT</h1>
-            <p className="text-muted-foreground">Update an existing streetwear item</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-8">
+          <div className="flex items-center">
+            <Button variant="ghost" asChild className="mr-4">
+              <Link href="/admin/products">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                BACK TO PRODUCTS
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-streetwear-lg">EDIT PRODUCT</h1>
+              <p className="text-muted-foreground">Update an existing streetwear item</p>
+            </div>
           </div>
         </div>
 
@@ -259,7 +261,7 @@ export default function EditProductPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="price">Price ($)</Label>
                       <Input
@@ -432,7 +434,7 @@ export default function EditProductPage() {
                 {isSingleModel && formData.sizeMode === "letters" ? (
                   <div className="mt-4">
                     <Label>Stock por talle</Label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                       {defaultSizes.map(size => (
                         <div key={size} className="flex items-center gap-2">
                           <span className="w-10">{size}</span>
@@ -448,7 +450,7 @@ export default function EditProductPage() {
                     {formData.numericSizes.length === 0 ? (
                       <p className="text-sm text-muted-foreground">Agregá talles numéricos para cargar stock.</p>
                     ) : (
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {formData.numericSizes.map(size => (
                           <div key={`num-${size}`} className="flex items-center gap-2">
                             <span className="w-10">{size}</span>
@@ -465,7 +467,7 @@ export default function EditProductPage() {
                     {formData.colors.map(color => (
                       <div key={color} className="mb-3">
                         <div className="font-medium mb-1">{color}</div>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                           {defaultSizes.map(size => (
                             <div key={size} className="flex items-center gap-2">
                               <span className="w-10">{size}</span>
@@ -478,17 +480,17 @@ export default function EditProductPage() {
                   </div>
                 ) : null}
                 {!isSingleModel && formData.sizeMode === "numeric" ? (
-                  <div className="mt-4">
-                    <Label>Stock por talle numérico y color</Label>
-                    {formData.colors.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Seleccioná colores para cargar stock por color+talle.</p>
-                    ) : formData.numericSizes.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Agregá talles numéricos para cargar stock.</p>
-                    ) : (
-                      formData.colors.map(color => (
-                        <div key={`num-${color}`} className="mb-3">
-                          <div className="font-medium mb-1">{color}</div>
-                          <div className="grid grid-cols-3 gap-3">
+                      <div className="mt-4">
+                        <Label>Stock por talle numérico y color</Label>
+                        {formData.colors.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">Seleccioná colores para cargar stock por color+talle.</p>
+                        ) : formData.numericSizes.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">Agregá talles numéricos para cargar stock.</p>
+                        ) : (
+                          formData.colors.map(color => (
+                            <div key={`num-${color}`} className="mb-3">
+                              <div className="font-medium mb-1">{color}</div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                             {formData.numericSizes.map(size => (
                               <div key={`num-${color}-${size}`} className="flex items-center gap-2">
                                 <span className="w-10">{size}</span>

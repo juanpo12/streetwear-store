@@ -111,7 +111,7 @@ export default function NewProductPage() {
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-8">
           <Button variant="ghost" asChild className="mr-4">
             <Link href="/admin/products">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -154,7 +154,7 @@ export default function NewProductPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="price">Price ($)</Label>
                       <Input
@@ -313,7 +313,7 @@ export default function NewProductPage() {
                   {formData.sizeMode === "letters" && formData.isSingleModel && (
                     <div>
                       <Label>Stock por talle</Label>
-                      <div className="grid grid-cols-5 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                         {["S","M","L","XL","XXL"].map((sz) => (
                           <div key={sz} className="space-y-1">
                             <Label htmlFor={`stock-${sz}`}>{sz}</Label>
@@ -334,7 +334,7 @@ export default function NewProductPage() {
                     <div className="space-y-3">
                       <Label>Stock por talle numérico</Label>
                       {formData.numericSizes.length > 0 ? (
-                        <div className="grid grid-cols-5 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                           {formData.numericSizes.map((sz) => (
                             <div key={sz} className="space-y-1">
                               <Label htmlFor={`stock-num-${sz}`}>{sz}</Label>
@@ -367,7 +367,7 @@ export default function NewProductPage() {
                             return (
                               <div key={colorName} className="space-y-2">
                                 <Label>{colorName}</Label>
-                                <div className="grid grid-cols-5 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                                   {sizesToUse.map((sz) => (
                                     <div key={`${colorName}-${sz}`} className="space-y-1">
                                       <Label htmlFor={`stock-${colorName}-${sz}`}>{sz}</Label>
@@ -415,7 +415,7 @@ export default function NewProductPage() {
                             return (
                               <div key={`num-${colorName}`} className="space-y-2">
                                 <Label>{colorName}</Label>
-                                <div className="grid grid-cols-5 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                                   {sizesToUse.map((sz) => (
                                     <div key={`num-${colorName}-${sz}`} className="space-y-1">
                                       <Label htmlFor={`stock-num-${colorName}-${sz}`}>{sz}</Label>

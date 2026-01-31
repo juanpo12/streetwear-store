@@ -51,7 +51,7 @@ export default function AnalyticsPage() {
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
             <h1 className="text-streetwear-lg">ANALYTICS DASHBOARD</h1>
             <p className="text-muted-foreground">Track your store performance and insights</p>
@@ -212,8 +212,8 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="space-y-4">
                 {topProducts.map((product, index) => (
-                  <div key={product.name} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
+                  <div key={product.name} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-sm font-medium">
                         {index + 1}
                       </div>

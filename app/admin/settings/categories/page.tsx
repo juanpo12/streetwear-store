@@ -53,7 +53,7 @@ export default function Categorias() {
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
             <h1 className="text-streetwear-lg">CATEGORÍAS</h1>
             <p className="text-muted-foreground">Gestiona las categorías de la tienda</p>
@@ -70,74 +70,76 @@ export default function Categorias() {
             <CardTitle>LISTA DE CATEGORÍAS</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead>Productos</TableHead>
-                  <TableHead className="w-[160px]">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell className="font-medium">{category.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{category.slug}</TableCell>
-                    <TableCell className="text-muted-foreground truncate max-w-[300px]">
-                      {category.description || "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{category.productCount ?? 0}</TableCell>
-                    <TableCell className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEdit({ id: category.id, name: category.name, slug: category.slug ?? undefined, description: category.description ?? undefined })}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog open={confirmId === category.id} onOpenChange={(open) => !open && setConfirmId(null)}>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setConfirmId(category.id)}
-                            disabled={deletingId === category.id}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Eliminar categoría</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {category.productCount && category.productCount > 0 ? (
-                                <span>
-                                  Esta categoría tiene {category.productCount} producto(s). Si la eliminás, esos productos
-                                  quedarán desactivados hasta que les asignés una nueva categoría.
-                                </span>
-                              ) : (
-                                <span>¿Estás seguro que querés eliminar &quot;{category.name}&quot;? Esta acción no se puede deshacer.</span>
-                              )}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} disabled={deletingId === category.id}>
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {categories.length === 0 && !loading && (
+            <div className="w-full overflow-x-auto">
+              <Table className="min-w-[800px]">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No hay categorías aún.
-                    </TableCell>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Productos</TableHead>
+                    <TableHead className="w-[160px]">Acciones</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {categories.map((category) => (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">{category.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{category.slug}</TableCell>
+                      <TableCell className="text-muted-foreground truncate max-w-[300px]">
+                        {category.description || "-"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{category.productCount ?? 0}</TableCell>
+                      <TableCell className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openEdit({ id: category.id, name: category.name, slug: category.slug ?? undefined, description: category.description ?? undefined })}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog open={confirmId === category.id} onOpenChange={(open) => !open && setConfirmId(null)}>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setConfirmId(category.id)}
+                              disabled={deletingId === category.id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Eliminar categoría</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {category.productCount && category.productCount > 0 ? (
+                                  <span>
+                                    Esta categoría tiene {category.productCount} producto(s). Si la eliminás, esos productos
+                                    quedarán desactivados hasta que les asignés una nueva categoría.
+                                  </span>
+                                ) : (
+                                  <span>¿Estás seguro que querés eliminar &quot;{category.name}&quot;? Esta acción no se puede deshacer.</span>
+                                )}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDelete} disabled={deletingId === category.id}>
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {categories.length === 0 && !loading && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        No hay categorías aún.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 

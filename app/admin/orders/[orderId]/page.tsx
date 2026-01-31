@@ -133,7 +133,7 @@ export default function AdminOrderDetailPage() {
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center gap-3">
             <Button variant="outline" asChild>
               <Link href="/admin/orders">
@@ -238,7 +238,7 @@ export default function AdminOrderDetailPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <div className="text-muted-foreground">Cliente</div>
                     <div className="font-medium">{detail.customerName || "—"}</div>
@@ -357,37 +357,39 @@ export default function AdminOrderDetailPage() {
                 <CardTitle>Productos</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Producto</TableHead>
-                      <TableHead>Variante</TableHead>
-                      <TableHead>Cantidad</TableHead>
-                      <TableHead>Precio</TableHead>
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {detail.items.map((it) => (
-                      <TableRow key={it.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="relative w-14 h-14 rounded overflow-hidden bg-muted">
-                              <Image src={it.imageUrl || "/placeholder.svg"} alt={it.productTitle} fill className="object-cover" />
-                            </div>
-                            <div>
-                              <div className="font-medium">{it.productTitle}</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{it.variantTitle || "—"}</TableCell>
-                        <TableCell>{it.quantity}</TableCell>
-                        <TableCell>${it.price}</TableCell>
-                        <TableCell className="font-semibold">${it.totalPrice}</TableCell>
+                <div className="w-full overflow-x-auto">
+                  <Table className="min-w-[600px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>Variante</TableHead>
+                        <TableHead>Cantidad</TableHead>
+                        <TableHead>Precio</TableHead>
+                        <TableHead>Total</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {detail.items.map((it) => (
+                        <TableRow key={it.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="relative w-14 h-14 rounded overflow-hidden bg-muted">
+                                <Image src={it.imageUrl || "/placeholder.svg"} alt={it.productTitle} fill className="object-cover" />
+                              </div>
+                              <div>
+                                <div className="font-medium">{it.productTitle}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{it.variantTitle || "—"}</TableCell>
+                          <TableCell>{it.quantity}</TableCell>
+                          <TableCell>${it.price}</TableCell>
+                          <TableCell className="font-semibold">${it.totalPrice}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </div>

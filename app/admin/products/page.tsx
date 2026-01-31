@@ -157,7 +157,7 @@ export default function AdminProductsPage() {
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
             <h1 className="text-streetwear-lg">PRODUCT MANAGEMENT</h1>
             <p className="text-muted-foreground">Manage your streetwear inventory</p>
@@ -172,9 +172,9 @@ export default function AdminProductsPage() {
 
         {/* Analytics & Filters */}
         <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between space-y-0">
             <CardTitle>OVERVIEW</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant={adminFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setAdminFilter('all')}>
                 <Filter className="h-4 w-4 mr-2" /> Todos
               </Button>
@@ -259,8 +259,8 @@ export default function AdminProductsPage() {
                         : "Inactive"
 
                 return (
-                  <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
+                  <div key={product.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-4">
                       <Image
                         src={product.image || "/placeholder.svg"}
                         alt={product.name}
@@ -275,13 +275,13 @@ export default function AdminProductsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center justify-between gap-4 sm:justify-end">
                       <div className="text-right">
                         <p className="text-sm font-medium">Stock: {stockVal ?? "-"}</p>
                         <Badge variant={badgeVariant as any}>{badgeText}</Badge>
                       </div>
 
-                      <div className="flex space-x-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
                           variant={product.featured ? "default" : "outline"}
